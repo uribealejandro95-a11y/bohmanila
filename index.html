@@ -3,1018 +3,736 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BoH Manila — Review Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>BoH Manila — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0d0f12;--bg2:#141619;--bg3:#1c1f24;--bg4:#242830;--bg5:#2e333d;
-  --border:#272b33;--border2:#363c48;
-  --text:#e8eaf0;--text2:#8b909e;--text3:#50566a;
-  --green:#2dd896;--gdim:#0c2318;
-  --amber:#f5a623;--adim:#2a1d08;
-  --red:#f05252;--rdim:#280e0e;
-  --blue:#4a9eff;--bdim:#0d1f38;
-  --purple:#a78bfa;--pdim:#1c1535;
-  --env-a:#2dd896;--env-b:#a78bfa;--env-c:#f5a623;
+  --bg:#0d0f12;--bg2:#141619;--bg3:#1c1f24;--bg4:#242830;
+  --border:#272b33;--text:#e8eaf0;--text2:#8b909e;--text3:#50566a;
+  --green:#2dd896;--gdim:#0b2017;--amber:#f5a623;--adim:#2a1c08;
+  --red:#f05252;--rdim:#280e0e;--blue:#4a9eff;--purple:#a78bfa;
   --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
 
-/* ── Header ── */
-.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:stretch;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:10px;padding:14px 0;font-size:13px;font-weight:600}
-.logo-dim{color:var(--text3);font-weight:400}
-
-/* Environment switcher */
-.env-switch{display:flex;align-items:stretch}
-.env-tab{display:flex;align-items:center;gap:8px;padding:0 20px;cursor:pointer;border-bottom:2px solid transparent;font-size:12px;font-weight:500;color:var(--text3);transition:all .2s;user-select:none}
-.env-tab:hover{color:var(--text2)}
-.env-tab.on-a{color:var(--env-a);border-bottom-color:var(--env-a)}
-.env-tab.on-b{color:var(--env-b);border-bottom-color:var(--env-b)}
-.env-tab.on-c{color:var(--env-c);border-bottom-color:var(--env-c)}
-.env-dot{width:7px;height:7px;border-radius:50%}
-.ed-a{background:var(--env-a)}.ed-b{background:var(--env-b)}.ed-c{background:var(--env-c)}
-
-/* Price table */
-.price-table{width:100%;border-collapse:collapse;font-size:11px}
-.price-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 8px;text-align:left;font-weight:500;white-space:nowrap}
-.price-table td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:middle}
-.price-table tr:hover td{background:var(--bg3)}
-.price-table tr.boh-row td{background:var(--gdim)}
-.price-pill{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;background:var(--bg4)}
-.price-low{color:var(--green)}.price-mid{color:var(--amber)}.price-high{color:var(--red)}
-
-.header-right{display:flex;align-items:center;gap:8px;padding:14px 0}
-.chip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2)}
-.chip-live{display:flex;align-items:center;gap:5px}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+/* Header */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:stretch;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;font-size:13px;font-weight:600;padding:14px 0}
+.logo span{color:var(--text3);font-weight:400}
+.tabs{display:flex}
+.tab{display:flex;align-items:center;gap:7px;padding:0 18px;cursor:pointer;border-bottom:2px solid transparent;font-size:12px;font-weight:500;color:var(--text3);transition:all .2s}
+.tab.a{color:var(--green);border-bottom-color:var(--green)}
+.tab.b{color:var(--purple);border-bottom-color:var(--purple)}
+.tab.c{color:var(--amber);border-bottom-color:var(--amber)}
+.dot{width:7px;height:7px;border-radius:50%}
+.hdr-r{display:flex;align-items:center;gap:8px;padding:14px 0}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.live{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* ── Environments ── */
-.env{display:none;padding:22px 28px;flex-direction:column;gap:16px}
-.env.active{display:flex}
+/* Environments */
+.env{display:none;padding:20px 24px;flex-direction:column;gap:14px;max-width:1400px}
+.env.on{display:flex}
 
-/* ── Cards ── */
+/* Cards */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
 .ct{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 
-/* ── KPI ── */
-.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
-.kpi-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
-.kpi-v{font-size:26px;font-weight:600;line-height:1;margin-bottom:3px}
-.kpi-s{font-size:10px;color:var(--text2)}
-.vg{color:var(--green)}.va{color:var(--amber)}.vr{color:var(--red)}.vb{color:var(--blue)}.vp{color:var(--purple)}
+/* KPI row */
+.krow{display:grid;gap:10px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.kv{font-size:24px;font-weight:600;line-height:1;margin-bottom:3px}
+.ks{font-size:10px;color:var(--text2)}
+.kg{color:var(--green)}.ka{color:var(--amber)}.kr{color:var(--red)}.kb{color:var(--blue)}.kp{color:var(--purple)}
 
-/* ── Layout ── */
+/* Sheet connector */
+.strip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.strip label{font-size:11px;color:var(--text2);white-space:nowrap}
+.strip input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:10px;outline:none}
+.strip input:focus{border-color:var(--green)}
+.btn{border:none;border-radius:7px;padding:6px 12px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.35}
+.bg{background:var(--green);color:#061a0e}
+.bb{background:var(--purple);color:#0d0a1a}
+.ba{background:var(--amber);color:#1a0f00}
+.bx{background:var(--bg4);color:var(--text3);border:1px solid var(--border)}
+.st{font-size:10px;white-space:nowrap;color:var(--text3)}
+
+/* Reviews */
+.rev{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:7px}
+.rev:last-child{margin-bottom:0}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.rtxt{font-size:11px;line-height:1.55;margin-bottom:4px}
+.tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.tp{background:var(--gdim);color:var(--green)}.tn{background:var(--rdim);color:var(--red)}
+
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 8px;text-align:left;font-weight:500;white-space:nowrap;cursor:pointer}
+.tbl th:hover{color:var(--text2)}
+.tbl td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl tr:hover td{background:var(--bg3)}
+.tbl tr.boh td{background:var(--gdim)}
+.mono{font-family:var(--mono);font-size:11px}
+.amber{color:var(--amber)}
+
+/* Hotel buttons */
+.hbtns{display:flex;flex-wrap:wrap;gap:6px}
+.hbtn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s}
+.hbtn:hover{border-color:var(--border2);color:var(--text)}
+.hbtn.sel{background:var(--pdim,#1c1535);border-color:var(--purple);color:var(--purple)}
+.hbtn.boh-btn{background:var(--gdim);border-color:var(--green);color:var(--green)}
+.hbtn.boh-btn.sel{background:var(--gdim);border-color:var(--green);color:var(--green)}
+
+/* Issues */
+.issue{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.issue:first-child{padding-top:0}.issue:last-child{border-bottom:none}
+.idot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ib{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;flex-shrink:0;letter-spacing:.04em}
+
+/* Price layout */
+.price-layout{display:grid;grid-template-columns:1fr 210px;gap:14px;align-items:start}
+.price-kpis{display:flex;flex-direction:column;gap:8px;position:sticky;top:56px}
+.filter-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.filter-card label{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;margin-bottom:4px}
+.filter-card label:last-child{margin-bottom:0}
+
+/* Misc */
 .row2{display:grid;grid-template-columns:1.8fr 1fr;gap:14px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:14px}
+.empty{color:var(--text3);font-size:12px;text-align:center;padding:24px;font-style:italic}
 .chart-wrap{position:relative}
-
-/* ── Category bars ── */
-.cat-item{margin-bottom:9px}.cat-item:last-child{margin-bottom:0}
-.cat-meta{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
-.cat-meta span:first-child{color:var(--text2)}
+.cat{margin-bottom:8px}.cat:last-child{margin-bottom:0}
+.cat-meta{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;color:var(--text2)}
 .bar-bg{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
-.bar-fill{height:5px;border-radius:3px;transition:width .7s ease}
-
-/* ── Issues ── */
-.issue{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
-.issue:last-child{border-bottom:none;padding-bottom:0}
-.issue:first-child{padding-top:0}
-.idot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.id-u{background:var(--red)}.id-h{background:var(--amber)}.id-l{background:var(--blue)}
-.ititle{font-size:12px;font-weight:500;margin-bottom:2px}
-.idesc{font-size:11px;color:var(--text2);line-height:1.5}
-.ibadge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;flex-shrink:0;letter-spacing:.04em}
-.ib-u{background:var(--rdim);color:var(--red)}.ib-h{background:var(--adim);color:var(--amber)}.ib-l{background:var(--bdim);color:var(--blue)}
-
-/* ── Review cards ── */
-.rev{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
-.rev:last-child{margin-bottom:0}
-.rev-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
-.avatar{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
-.rname{font-size:12px;font-weight:500}.rmeta{font-size:10px;color:var(--text2)}
-.rscore{font-size:18px;font-weight:600}
-.rtext{font-size:11px;line-height:1.55;margin-bottom:5px}
-.tags{display:flex;flex-wrap:wrap;gap:3px}
-.tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
-.tp{background:var(--gdim);color:var(--green)}.tn{background:var(--rdim);color:var(--red)}.tm{background:var(--bg4);color:var(--text2)}
-
-/* ── AI panel ── */
-.ai-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
-.ai-title{font-size:13px;font-weight:500;margin-bottom:2px}
-.ai-sub{font-size:11px;color:var(--text2);margin-bottom:12px}
-.ai-badge{background:linear-gradient(135deg,var(--gdim),var(--bdim));border:1px solid rgba(45,216,150,.2);border-radius:6px;padding:3px 9px;font-size:10px;color:var(--green);font-weight:600;letter-spacing:.05em}
-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font);font-size:12px;line-height:1.6;resize:vertical;min-height:68px;outline:none;transition:border-color .2s}
-textarea:focus{border-color:var(--green)}
-textarea::placeholder{color:var(--text3)}
-.analyze-btn{background:var(--env-a);color:#061210;border:none;border-radius:7px;padding:8px 15px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:opacity .2s;margin-top:8px}
-.analyze-btn.b-purple{background:var(--env-b);color:#100c20}
-.analyze-btn:hover{opacity:.85}
-.analyze-btn:disabled{opacity:.35;cursor:default}
-.spin{width:11px;height:11px;border:2px solid rgba(6,18,16,.3);border-top-color:#061210;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.spin-p{border:2px solid rgba(16,12,32,.3);border-top-color:#100c20}
-@keyframes spin{to{transform:rotate(360deg)}}
-.ai-result{margin-top:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;display:none}
-.ai-result.show{display:block}
-.action-box{background:var(--bg4);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:9px 11px;font-size:11px;margin-top:8px;line-height:1.6}
-.action-label{font-size:9px;color:var(--amber);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
-
-/* ── ENV B (Competitor) ── */
-.hotel-select{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.hbtn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
-.hbtn:hover{border-color:var(--border2);color:var(--text)}
-.hbtn.sel{background:var(--pdim);border-color:var(--purple);color:var(--purple)}
-
-.lesson{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
-.lesson:last-child{margin-bottom:0}
-.lesson-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.lesson-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
-.li-red{background:var(--rdim)}.li-amber{background:var(--adim)}.li-green{background:var(--gdim)}
-.lesson-hotel{font-size:10px;color:var(--text3);margin-bottom:3px}
-.lesson-title{font-size:12px;font-weight:500;margin-bottom:3px}
-.lesson-desc{font-size:11px;color:var(--text2);line-height:1.55}
-.lesson-apply{font-size:11px;color:var(--green);margin-top:5px;line-height:1.5}
-.lesson-apply::before{content:"→ BoH: ";font-weight:500}
-
-.empty{color:var(--text3);font-size:12px;text-align:center;padding:28px;font-style:italic;line-height:1.7}
-
-/* ── Sheets connector strip ── */
-.sheet-strip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
-.sheet-strip input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:10px;outline:none;transition:border-color .2s}
-.sheet-strip input:focus{border-color:var(--purple)}
-.sheet-strip input::placeholder{color:var(--text3)}
-.sheet-btn{border:none;border-radius:6px;padding:6px 12px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap}
-.sb-green{background:var(--green);color:#061210}
-.sb-purple{background:var(--purple);color:#100c20}
-.sheet-btn:hover{opacity:.85}
-.sheet-btn:disabled{opacity:.35;cursor:default}
-.conn-st{font-size:10px;white-space:nowrap;display:flex;align-items:center;gap:4px;color:var(--text3)}
-
-pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--text2);overflow-x:auto;white-space:pre-wrap;line-height:1.6;margin-top:6px}
+.bar-f{height:5px;border-radius:3px}
+.ovf{overflow-y:auto;max-height:400px}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo">BoH Manila <span class="logo-dim">&nbsp;/&nbsp;Review Intelligence</span></div>
-
-  <div class="env-switch">
-    <div class="env-tab on-a" id="tab-a" onclick="switchEnv('a')">
-      <div class="env-dot ed-a"></div>Mi hotel
-    </div>
-    <div class="env-tab" id="tab-b" onclick="switchEnv('b')">
-      <div class="env-dot ed-b"></div>Inteligencia competitiva
-    </div>
-    <div class="env-tab" id="tab-c" onclick="switchEnv('c')">
-      <div class="env-dot ed-c"></div>Precios
-    </div>
+<div class="hdr">
+  <div class="logo">BoH Manila <span>&nbsp;/&nbsp;Dashboard</span></div>
+  <div class="tabs">
+    <div class="tab a" onclick="go('a')"><div class="dot" style="background:var(--green)"></div>Mi hotel</div>
+    <div class="tab" onclick="go('b')" id="tab-b"><div class="dot" style="background:var(--purple)"></div>Competidores</div>
+    <div class="tab" onclick="go('c')" id="tab-c"><div class="dot" style="background:var(--amber)"></div>Precios</div>
   </div>
-
-  <div class="header-right">
-    <div class="chip chip-live"><div class="live-dot"></div>Booking.com</div>
-    <div class="chip" id="syncBadge">May 2026 · 5 reseñas</div>
+  <div class="hdr-r">
+    <div class="chip"><div class="live"></div>Booking.com</div>
+    <div class="chip" id="syncBadge">—</div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════
-     ENV A — MI HOTEL
-═════════════════════════════════════════════════ -->
-<div class="env active" id="env-a">
+<!-- ═══ A: MI HOTEL ═══════════════════════════════════════════ -->
+<div class="env on" id="env-a">
 
-  <!-- Sheets connector -->
-  <div class="sheet-strip">
-    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      Google Sheets BoH
-    </span>
-    <input id="sheetA" placeholder="Pega URL CSV de tu Sheet (Archivo → Publicar en la web → CSV)"/>
-    <button class="sheet-btn sb-green" id="btnSheetA" onclick="loadSheetA()">Cargar</button>
-    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetA()" title="Olvidar URL guardada">✕</button>
-    <div class="conn-st" id="stA"><span>—</span></div>
+  <div class="strip">
+    <label>Reseñas BoH (Sheet CSV)</label>
+    <input id="urlA" placeholder="URL CSV pestaña Resenas">
+    <button class="btn bg" onclick="loadA()">Cargar</button>
+    <button class="btn bx" onclick="clearUrl('a')">✕</button>
+    <span class="st" id="stA">—</span>
   </div>
 
-  <!-- KPIs -->
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-l">Score general</div><div class="kpi-v vg" id="kA-score">9.4</div><div class="kpi-s">Mayo 2026</div></div>
-    <div class="kpi"><div class="kpi-l">Ubicación</div><div class="kpi-v vg">10.0</div><div class="kpi-s">Categoría top</div></div>
-    <div class="kpi"><div class="kpi-l">Personal</div><div class="kpi-v va" id="kA-staff">9.0</div><div class="kpi-s">Oportunidad mejora</div></div>
-    <div class="kpi"><div class="kpi-l">Problemas activos</div><div class="kpi-v vr">3</div><div class="kpi-s">Sin resolver</div></div>
-    <div class="kpi"><div class="kpi-l">Reseñas este mes</div><div class="kpi-v vb" id="kA-count">5</div><div class="kpi-s">Booking.com</div></div>
+  <div class="krow" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi"><div class="kl">Score general</div><div class="kv kg" id="kA-score">—</div><div class="ks">BoH Manila</div></div>
+    <div class="kpi"><div class="kl">Ubicación</div><div class="kv kg">10.0</div><div class="ks">Categoría top</div></div>
+    <div class="kpi"><div class="kl">Personal</div><div class="kv ka" id="kA-staff">9.0</div><div class="ks">Oportunidad mejora</div></div>
+    <div class="kpi"><div class="kl">Problemas activos</div><div class="kv kr">3</div><div class="ks">Sin resolver</div></div>
+    <div class="kpi"><div class="kl">Reseñas</div><div class="kv kb" id="kA-count">—</div><div class="ks">Booking.com</div></div>
   </div>
 
-  <!-- KPIs precios BoH (se llena cuando carga el sheet de precios) -->
-  <div class="kpi-row" id="kpiPricesRow" style="grid-template-columns:repeat(4,1fr)">
-    <div class="kpi"><div class="kpi-l">ADR BoH promedio</div><div class="kpi-v va" id="kA-adr">—</div><div class="kpi-s">USD / noche</div></div>
-    <div class="kpi"><div class="kpi-l">ADR mercado</div><div class="kpi-v vp" id="kA-mkt">—</div><div class="kpi-s">18 competidores</div></div>
-    <div class="kpi"><div class="kpi-l">BoH vs mercado</div><div class="kpi-v" id="kA-diff">—</div><div class="kpi-s">diferencia %</div></div>
-    <div class="kpi"><div class="kpi-l">Posición en mercado</div><div class="kpi-v vb" id="kA-rank">—</div><div class="kpi-s">por ADR</div></div>
-  </div>
-
-  <!-- Chart + Categories -->
   <div class="row2">
     <div class="card">
-      <div class="ct">Evolución del score <span style="color:var(--text3)">BoH Manila · Mayo 2026</span></div>
-      <div class="chart-wrap" style="height:185px"><canvas id="trendChart" role="img" aria-label="Trend BoH"></canvas></div>
+      <div class="ct">Evolución del score</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="chartA"></canvas></div>
     </div>
     <div class="card">
       <div class="ct">Por categoría</div>
-      <div id="catBars"></div>
+      <div id="catsA"></div>
     </div>
   </div>
 
-  <!-- Issues + Reviews -->
   <div class="row3">
     <div class="card">
-      <div class="ct">Problemas detectados <span style="color:var(--text3)">este mes</span></div>
-      <div id="issuesList"></div>
+      <div class="ct">Problemas detectados</div>
+      <div id="issuesA"></div>
     </div>
-    <div class="card" style="overflow-y:auto;max-height:380px">
+    <div class="card ovf">
       <div class="ct">Últimas reseñas</div>
-      <div id="reviewsA"></div>
+      <div id="revsA"></div>
     </div>
-    <div class="ai-panel" style="background:var(--bg2)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div><div class="ai-title">Analizar nueva reseña</div><div class="ai-sub">Booking · Google · TripAdvisor</div></div>
-        <div class="ai-badge">✦ CLAUDE</div>
+    <div class="card">
+      <div class="ct">ADR BoH en el mercado <span style="font-size:10px;color:var(--text3)">del sheet de precios</span></div>
+      <div class="krow" style="grid-template-columns:1fr 1fr;gap:8px">
+        <div class="kpi" style="padding:10px 12px"><div class="kl">ADR BoH</div><div class="kv ka" id="kA-adr">—</div></div>
+        <div class="kpi" style="padding:10px 12px"><div class="kl">ADR mercado</div><div class="kv kp" id="kA-mkt">—</div></div>
+        <div class="kpi" style="padding:10px 12px"><div class="kl">Diferencia</div><div class="kv" id="kA-diff">—</div></div>
+        <div class="kpi" style="padding:10px 12px"><div class="kl">Posición</div><div class="kv kb" id="kA-rank">—</div></div>
       </div>
-      <textarea id="inputA" placeholder="Pega aquí el texto de la reseña de BoH Manila..."></textarea>
-      <button class="analyze-btn" id="btnA" onclick="analyzeA()">
-        <div class="spin" id="spinA"></div><span id="btxtA">Analizar reseña</span>
-      </button>
-      <div class="ai-result" id="resA"></div>
     </div>
   </div>
 
 </div>
 
-<!-- ════════════════════════════════════════════════
-     ENV B — INTELIGENCIA COMPETITIVA
-═════════════════════════════════════════════════ -->
+<!-- ═══ B: COMPETIDORES ════════════════════════════════════════ -->
 <div class="env" id="env-b">
 
-  <!-- Sheets connector competidores -->
-  <div class="sheet-strip">
-    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      Sheets competidores (Apify output)
-    </span>
-    <input id="sheetB" placeholder="URL CSV del scraper de reviews de tus 17 competidores"/>
-    <button class="sheet-btn sb-purple" id="btnSheetB" onclick="loadSheetB()">Cargar</button>
-    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetB()" title="Olvidar URL guardada">✕</button>
-    <div class="conn-st" id="stB"><span>—</span></div>
+  <div class="strip">
+    <label>Sheet reseñas (mismo CSV)</label>
+    <input id="urlB" placeholder="URL CSV pestaña Resenas">
+    <button class="btn bb" onclick="loadB()">Cargar</button>
+    <button class="btn bx" onclick="clearUrl('b')">✕</button>
+    <span class="st" id="stB">—</span>
   </div>
 
-  <!-- Hotel selector -->
   <div class="card">
-    <div class="ct">Selecciona un competidor para ver sus reseñas</div>
-    <div class="hotel-select" id="hotelSelect">
-      <div class="hbtn sel" onclick="selectHotel(this,'Click Clack')">Click Clack</div>
-      <div class="hbtn" onclick="selectHotel(this,'Wake')">Wake</div>
-      <div class="hbtn" onclick="selectHotel(this,'Art Hotel')">Art Hotel</div>
-      <div class="hbtn" onclick="selectHotel(this,'Landmark')">Landmark</div>
-      <div class="hbtn" onclick="selectHotel(this,'23 Hotel')">23 Hotel</div>
-      <div class="hbtn" onclick="selectHotel(this,'El Cielo')">El Cielo</div>
-      <div class="hbtn" onclick="selectHotel(this,'Manila Boutique')">Manila Boutique</div>
-      <div class="hbtn" onclick="selectHotel(this,'Somos Bold')">Somos Bold</div>
-      <div class="hbtn" onclick="selectHotel(this,'The Somos')">The Somos</div>
-      <div class="hbtn" onclick="selectHotel(this,'Wellcomme')">Wellcomme</div>
-      <div class="hbtn" onclick="selectHotel(this,'Be Mate')">Be Mate</div>
-      <div class="hbtn" onclick="selectHotel(this,'Selvario 36')">Selvario 36</div>
-      <div class="hbtn" onclick="selectHotel(this,'Hashtag 98')">Hashtag 98</div>
-      <div class="hbtn" onclick="selectHotel(this,'Heiss')">Heiss</div>
-      <div class="hbtn" onclick="selectHotel(this,'York Luxury')">York Luxury</div>
-      <div class="hbtn" onclick="selectHotel(this,'Marquee')">Marquee</div>
-      <div class="hbtn" onclick="selectHotel(this,'Villaz')">Villaz</div>
-    </div>
+    <div class="ct">Selecciona un hotel</div>
+    <div class="hbtns" id="hotelBtns"></div>
   </div>
 
-  <!-- Competitor reviews + AI lessons -->
   <div class="row2">
-    <div class="card" style="overflow-y:auto;max-height:420px">
-      <div class="ct" id="compCardTitle">Reseñas · Click Clack <span style="color:var(--text3)">Carga tu Sheet para ver datos reales</span></div>
-      <div id="reviewsB">
-        <div class="empty">Conecta el Google Sheet con el output del<br>Apify Reviews Scraper para ver las reseñas<br>de cada competidor aquí.</div>
-      </div>
+    <div class="card ovf">
+      <div class="ct" id="compTitle">Reseñas</div>
+      <div id="revsB"><div class="empty">Selecciona un hotel arriba</div></div>
     </div>
-
-    <div class="card" style="overflow-y:auto;max-height:420px">
-      <div class="ct">Lecciones aplicables a BoH</div>
-      <div id="lessonsB">
-        <div class="empty">Pega abajo una reseña negativa de un<br>competidor y Claude extrae qué puedes<br>aprender y cómo aplicarlo en BoH.</div>
-      </div>
+    <div class="card">
+      <div class="ct">Scores promedio por hotel</div>
+      <div class="chart-wrap" style="height:300px"><canvas id="chartB"></canvas></div>
     </div>
-  </div>
-
-  <!-- AI: Extraer lección de reseña de competidor -->
-  <div class="ai-panel" style="background:var(--bg2);border-color:rgba(167,139,250,.2)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div>
-        <div class="ai-title">Extraer lección de reseña de competidor</div>
-        <div class="ai-sub">Pega una reseña negativa (o mixta) de cualquier competidor — Claude identifica el error y cómo BoH ya lo resuelve o debe resolverlo</div>
-      </div>
-      <div class="ai-badge" style="border-color:rgba(167,139,250,.3);color:var(--purple)">✦ CLAUDE</div>
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:8px">
-      <input type="text" id="compNameInput" placeholder="Nombre del hotel competidor" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;width:200px;flex-shrink:0;transition:border-color .2s" onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'">
-      <textarea id="inputB" placeholder="Pega aquí la reseña del competidor..." style="min-height:56px"></textarea>
-    </div>
-    <button class="analyze-btn b-purple" id="btnB" onclick="analyzeB()">
-      <div class="spin spin-p" id="spinB"></div><span id="btxtB">Extraer lección para BoH</span>
-    </button>
-    <div class="ai-result" id="resB"></div>
   </div>
 
 </div>
 
-<!-- ════════════════════════════════════════════════
-     ENV C — PRECIOS (replica Looker Studio)
-═════════════════════════════════════════════════ -->
+<!-- ═══ C: PRECIOS ════════════════════════════════════════════ -->
 <div class="env" id="env-c">
 
-  <div class="sheet-strip">
-    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      Sheets precios
-    </span>
-    <input id="sheetC" placeholder="URL CSV del sheet de precios"/>
-    <button class="sheet-btn" style="background:var(--amber);color:#1a0f00;font-weight:600;border:none;border-radius:7px;padding:6px 12px;font-size:11px;cursor:pointer" id="btnSheetC" onclick="loadSheetC()">Actualizar</button>
-    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetC()">✕</button>
-    <div class="conn-st" id="stC"><span>—</span></div>
+  <div class="strip">
+    <label>Precios (Sheet Datos CSV)</label>
+    <input id="urlC" placeholder="URL CSV pestaña Datos">
+    <button class="btn ba" onclick="loadC()">Cargar</button>
+    <button class="btn bx" onclick="clearUrl('c')">✕</button>
+    <span class="st" id="stC">—</span>
   </div>
 
-  <div id="priceDebug" style="font-size:10px;font-family:var(--mono);color:var(--amber);padding:6px 10px;background:var(--bg3);border-radius:6px;word-break:break-all"></div>
-
-  <!-- Header tipo Looker -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
     <div>
       <div style="font-size:20px;font-weight:600;color:var(--amber)">(BoH) Hotels — Benchmark Precios Competencia</div>
       <div style="font-size:11px;color:var(--text3);margin-top:3px">*Precio de habitaciones disponibles para una reserva de 1 noche · 7 días</div>
     </div>
-    <div style="text-align:right">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Fecha de Actualización</div>
-      <div style="font-size:16px;font-weight:600;color:var(--text)" id="kC-fecha">—</div>
-    </div>
+    <div style="text-align:right"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Fecha Actualización</div><div style="font-size:15px;font-weight:600" id="kC-fecha">—</div></div>
   </div>
 
-  <!-- Layout 2 columnas: tablas izq, KPIs+filtro der -->
-  <div style="display:grid;grid-template-columns:1fr 220px;gap:14px;align-items:start">
-
-    <!-- Columna izquierda: tablas -->
+  <div class="price-layout">
     <div style="display:flex;flex-direction:column;gap:14px">
 
-      <!-- Tabla 1: KPI General x Hotel -->
       <div class="card">
         <div class="ct">KPI General x Hotel</div>
         <div style="overflow-x:auto">
-          <table class="price-table" id="tblHotel">
+          <table class="tbl">
             <thead><tr>
-              <th style="width:28px">#</th>
+              <th>#</th>
               <th>Nombre Hotel</th>
               <th style="text-align:right">Rating</th>
-              <th style="text-align:right;cursor:pointer" onclick="sortHotel('adr')" id="thADR">ADR Prom (USD) ▾</th>
-              <th style="text-align:right;cursor:pointer" onclick="sortHotel('m2')" id="thM2">ADR / m2 prom</th>
+              <th style="text-align:right" onclick="sortC('adr')" id="thADR">ADR Prom (USD) ▾</th>
+              <th style="text-align:right" onclick="sortC('m2')" id="thM2">ADR / m2 prom</th>
             </tr></thead>
-            <tbody id="priceTable">
-              <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando...</td></tr>
-            </tbody>
+            <tbody id="tblHotel"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <!-- Tabla 2: Detalle x habitación x hotel -->
       <div class="card">
-        <div class="ct">Detalle x habitación x hotel <span style="color:var(--text3);font-size:10px" id="detailHotelLabel">todos los hoteles</span></div>
+        <div class="ct">Detalle x habitación x hotel <span id="detailLabel" style="color:var(--text3)">todos</span></div>
         <div style="overflow-x:auto">
-          <table class="price-table" id="tblDetail">
+          <table class="tbl">
             <thead><tr>
-              <th style="width:28px">#</th>
-              <th>Tipo de Habitación</th>
-              <th style="text-align:right">Área (m2)</th>
+              <th>#</th><th>Tipo de Habitación</th>
+              <th style="text-align:right">Área m2</th>
               <th style="text-align:right">Camas</th>
-              <th style="text-align:left">Tamaño de Cama</th>
-              <th style="text-align:right;cursor:pointer" onclick="sortDetail('adr')">ADR (USD) ▾</th>
-              <th style="text-align:right;cursor:pointer" onclick="sortDetail('m2')">ADR /m2</th>
+              <th>Tamaño Cama</th>
+              <th style="text-align:right" onclick="sortDetail('adr')">ADR (USD) ▾</th>
+              <th style="text-align:right" onclick="sortDetail('m2')">ADR /m2</th>
             </tr></thead>
-            <tbody id="detailTable">
-              <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando...</td></tr>
-            </tbody>
+            <tbody id="tblDetail"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
           </table>
         </div>
       </div>
 
     </div>
 
-    <!-- Columna derecha: filtro + KPIs -->
-    <div style="display:flex;flex-direction:column;gap:10px;position:sticky;top:70px">
-
-      <!-- Filtro tipo de cancelación -->
-      <div class="card" style="padding:12px 14px">
+    <div class="price-kpis">
+      <div class="filter-card">
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Tipo de Cancelación</div>
-        <div id="cancelFilter" style="display:flex;flex-direction:column;gap:4px">
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
-            <input type="radio" name="cancel" value="all" checked onchange="applyFilter()" style="accent-color:var(--amber)"> Todos
-          </label>
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
-            <input type="radio" name="cancel" value="free_cancellation" onchange="applyFilter()" style="accent-color:var(--amber)"> free_cancellation
-          </label>
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
-            <input type="radio" name="cancel" value="non_refundable" onchange="applyFilter()" style="accent-color:var(--amber)"> non_refundable
-          </label>
-        </div>
+        <label><input type="radio" name="cancelF" value="all" checked onchange="filterC()"> Todos</label>
+        <label><input type="radio" name="cancelF" value="free_cancellation" onchange="filterC()"> free_cancellation</label>
+        <label><input type="radio" name="cancelF" value="non_refundable" onchange="filterC()"> non_refundable</label>
       </div>
-
-      <!-- KPI cards -->
-      <div class="card" style="padding:12px 14px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Promedio — Tarifa</div>
-        <div style="font-size:26px;font-weight:600;color:var(--amber)" id="kC-avg">—</div>
-      </div>
-      <div class="card" style="padding:12px 14px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Promedio — $/m2</div>
-        <div style="font-size:26px;font-weight:600;color:var(--amber)" id="kC-m2avg">—</div>
-      </div>
-      <div class="card" style="padding:12px 14px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Precio Max</div>
-        <div style="font-size:26px;font-weight:600;color:var(--text)" id="kC-max">—</div>
-      </div>
-      <div class="card" style="padding:12px 14px">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Record Count</div>
-        <div style="font-size:26px;font-weight:600;color:var(--text)" id="kC-count">—</div>
-      </div>
-
+      <div class="kpi"><div class="kl">Promedio — Tarifa</div><div class="kv ka" id="kC-avg">—</div></div>
+      <div class="kpi"><div class="kl">Promedio — $/m2</div><div class="kv ka" id="kC-m2">—</div></div>
+      <div class="kpi"><div class="kl">Precio Max</div><div class="kv" id="kC-max">—</div></div>
+      <div class="kpi"><div class="kl">Record Count</div><div class="kv" id="kC-cnt">—</div></div>
     </div>
   </div>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
-// ══════════════════════════════════════════════════
-// DATA
-// ══════════════════════════════════════════════════
-const seedReviews = [
-  {reviewer:"Joao",country:"FR",date:"1 may",score:9.0,
-   pos:"Ubicación perfecta, limpio, bien decorado, desayuno bueno, personal amable",
-   neg:"Puerta cierra a las 10pm — hay que esperar o llamar por WhatsApp",
-   tags:[{t:"Ubicación",p:1},{t:"Limpieza",p:1},{t:"Desayuno",p:1},{t:"Puerta 10pm",p:0}]},
-  {reviewer:"Armin",country:"AU",date:"4 may",score:8.0,
-   pos:"Diseño moderno, cama enorme, café recién molido",
-   neg:"Recepción oculta, tarjeta acceso falla (problema persistente), sin inglés, horario desayuno tardío",
-   tags:[{t:"Diseño",p:1},{t:"Cama",p:1},{t:"Key card",p:0},{t:"Sin inglés",p:0},{t:"Recepción",p:0}]},
-  {reviewer:"Cassie",country:"US",date:"5 may",score:10,
-   pos:"Personal excepcional, jacuzzi en terraza, limpio, barrio Manila, muy seguro",
-   neg:"Café no recomendable, piscina en construcción",
-   tags:[{t:"Personal ★",p:1},{t:"Jacuzzi",p:1},{t:"Manila",p:1},{t:"Café",p:0}]},
-  {reviewer:"Haroñ Rafael",country:"CO",date:"8 may",score:10,
-   pos:"El concepto de las habitaciones — Excelente",neg:"",
-   tags:[{t:"Concepto",p:1},{t:"Perfecto",p:1}]},
-  {reviewer:"Rafael",country:"CO",date:"8 may",score:10,
-   pos:"La atención 100% Excelente",neg:"",
-   tags:[{t:"Atención",p:1}]}
-];
+// ═══════════════════════════════════════════════════
+// URLS (hardcoded — cambiar si cambian los sheets)
+// ═══════════════════════════════════════════════════
+const URL_RESENAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv&gid=1749390536";
+const URL_PRECIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv";
 
-const issues=[
-  {title:"Puerta principal cierra a las 10pm",desc:"Fricción directa — huéspedes esperan o llaman por WhatsApp",p:"urgent"},
-  {title:"Recepción oculta sin señalización",desc:"Difícil de encontrar cuando la cafetería está desatendida",p:"urgent"},
-  {title:"Tarjeta de acceso con fallas",desc:"Problema ya reportado antes y sin resolver aún",p:"urgent"},
-  {title:"Sin personal que hable inglés",desc:"Impacta a huéspedes internacionales",p:"high"},
-  {title:"Café de baja calidad",desc:"Mencionado negativamente por 2 huéspedes distintos",p:"high"},
-];
-
-const cats=[
-  {name:"Ubicación",avg:10,c:"#2dd896"},{name:"Limpieza",avg:10,c:"#2dd896"},
-  {name:"Confort",avg:10,c:"#2dd896"},{name:"Personal",avg:9.0,c:"#f5a623"},
-  {name:"Instalaciones",avg:9.0,c:"#f5a623"},{name:"Calidad/precio",avg:9.1,c:"#f5a623"},
-];
-
-const avatarBg=["#0c2318","#0d1f38","#2a1d08","#280e0e","#1c1535"];
-const avatarClr=["#2dd896","#4a9eff","#f5a623","#f05252","#a78bfa"];
-
-// ══════════════════════════════════════════════════
-// ENV SWITCH
-// ══════════════════════════════════════════════════
-function switchEnv(env){
-  document.getElementById("env-a").classList.toggle("active",env==="a");
-  document.getElementById("env-b").classList.toggle("active",env==="b");
-  document.getElementById("env-c").classList.toggle("active",env==="c");
-  document.getElementById("tab-a").className="env-tab"+(env==="a"?" on-a":"");
-  document.getElementById("tab-b").className="env-tab"+(env==="b"?" on-b":"");
-  document.getElementById("tab-c").className="env-tab"+(env==="c"?" on-c":"");
-}
-
-// ══════════════════════════════════════════════════
-// RENDER HELPERS
-// ══════════════════════════════════════════════════
-function scoreColor(s){return s>=9?"#2dd896":s>=7?"#f5a623":"#f05252"}
-
-function revHTML(r,i){
-  const init=(r.reviewer||r.name||"?").split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
-  const sc=scoreColor(r.score);
-  return `<div class="rev">
-    <div class="rev-header">
-      <div style="display:flex;align-items:center;gap:7px">
-        <div class="avatar" style="background:${avatarBg[i%5]};color:${avatarClr[i%5]}">${init}</div>
-        <div><div class="rname">${r.reviewer||r.name}</div><div class="rmeta">${r.country||""} · ${r.date}</div></div>
-      </div>
-      <div class="rscore" style="color:${sc}">${r.score}</div>
-    </div>
-    ${r.pos?`<div class="rtext" style="color:var(--text2)">✓ ${r.pos}</div>`:""}
-    ${r.neg?`<div class="rtext" style="color:var(--red);opacity:.85">✕ ${r.neg}</div>`:""}
-    <div class="tags">${(r.tags||[]).map(t=>`<span class="tag ${t.p?"tp":"tn"}">${t.t}</span>`).join("")}</div>
-  </div>`;
-}
-
-// ══════════════════════════════════════════════════
-// INIT — ENV A
-// ══════════════════════════════════════════════════
-// INIT — auto-load desde localStorage
-// ══════════════════════════════════════════════════
-function initA(){
-  const rc=document.getElementById("reviewsA");
-  rc.innerHTML=seedReviews.map((r,i)=>revHTML(r,i)).join("");
-  const il=document.getElementById("issuesList");
-  il.innerHTML=issues.map(issue=>{
-    const dc=issue.p==="urgent"?"id-u":"id-h";
-    const bc=issue.p==="urgent"?"ib-u":"ib-h";
-    const bl=issue.p==="urgent"?"URGENTE":"PRIORITARIO";
-    return `<div class="issue"><div class="idot ${dc}"></div>
-      <div style="flex:1"><div class="ititle">${issue.title}</div><div class="idesc">${issue.desc}</div></div>
-      <span class="ibadge ${bc}">${bl}</span></div>`;
-  }).join("");
-  const cb=document.getElementById("catBars");
-  cb.innerHTML=cats.map(c=>`<div class="cat-item">
-    <div class="cat-meta"><span>${c.name}</span><span style="color:${c.c}">${c.avg}</span></div>
-    <div class="bar-bg"><div class="bar-fill" style="width:${c.avg*10}%;background:${c.c}"></div></div>
-  </div>`).join("");
-  renderChart(["1 may","4 may","5 may","8 may (1)","8 may (2)"],[9,8,10,10,10]);
-
-  // ── Auto-load URLs guardadas ──
-  const savedA=localStorage.getItem("boh_url_a");
-  if(savedA){
-    document.getElementById("sheetA").value=savedA;
-    document.getElementById("btnSheetA").textContent="Actualizando...";
-    const lastSync=localStorage.getItem("boh_sync_a");
-    if(lastSync){
-      const d=new Date(lastSync);
-      document.getElementById("stA").innerHTML=`<span style="color:var(--text3)">Última sync: ${d.toLocaleDateString("es-CO",{day:"2-digit",month:"short"})} ${d.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"})}</span>`;
-    }
-    loadSheetA(savedA);
-  }
-  const savedB=localStorage.getItem("boh_url_b");
-  if(savedB){
-    document.getElementById("sheetB").value=savedB;
-    document.getElementById("btnSheetB").textContent="Actualizando...";
-    loadSheetB(savedB);
-  }
-
-  // ── Auto-refresh cada 30 minutos ──
-  setInterval(()=>{
-    const urlA=localStorage.getItem("boh_url_a");
-    const urlB=localStorage.getItem("boh_url_b");
-    if(urlA)loadSheetA(urlA);
-    if(urlB)loadSheetB(urlB);
-  }, 30*60*1000);
-}
-
-function renderChart(labels,data){
-  const old=Chart.getChart("trendChart");if(old)old.destroy();
-  new Chart(document.getElementById("trendChart").getContext("2d"),{
-    type:"line",
-    data:{labels,datasets:[{label:"Score",data,
-      borderColor:"#2dd896",backgroundColor:"rgba(45,216,150,.06)",
-      borderWidth:2,pointBackgroundColor:"#2dd896",pointRadius:4,tension:.4,fill:true}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{backgroundColor:"#1c1f24",borderColor:"#272b33",borderWidth:1,
-        titleColor:"#8b909e",bodyColor:"#e8eaf0"}},
-      scales:{
-        x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10,family:"DM Sans"}}},
-        y:{min:5,max:10,grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10,family:"DM Sans"},stepSize:1}}
-      }}
+// ═══════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════
+function go(tab){
+  ['a','b','c'].forEach(t=>{
+    document.getElementById('env-'+t).classList.toggle('on', t===tab);
+    const el=document.querySelector('.tab:nth-child('+(t.charCodeAt(0)-96)+')');
+    if(el){el.className='tab'+(t===tab?' '+t:'');}
   });
 }
 
-// ══════════════════════════════════════════════════
-// GOOGLE SHEETS LOADERS
-// ══════════════════════════════════════════════════
-async function parseCSV(url){
-  const proxy="https://corsproxy.io/?"+encodeURIComponent(url);
+// ═══════════════════════════════════════════════════
+// CSV PARSER (fetch text → PapaParse string)
+// ═══════════════════════════════════════════════════
+async function fetchCSV(url){
+  const proxy = "https://corsproxy.io/?" + encodeURIComponent(url);
   let text;
-  try{
-    const r=await fetch(proxy);
-    if(!r.ok)throw new Error();
-    text=await r.text();
-  }catch(e){
+  // Try proxy first, then direct
+  for(const u of [proxy, url]){
     try{
-      const r=await fetch(url);
-      if(!r.ok)throw new Error();
-      text=await r.text();
-    }catch(e2){
-      throw new Error("No se pudo acceder al Sheet — verifica que esté publicado como CSV");
-    }
+      const r = await fetch(u);
+      if(r.ok){ text = await r.text(); break; }
+    }catch(e){}
   }
-  const result=Papa.parse(text,{
-    header:true,
-    skipEmptyLines:true,
-    transformHeader:h=>h.replace(/^\ufeff/,"").trim().toLowerCase()
+  if(!text) throw new Error("No se pudo acceder al Sheet. Verifica que esté publicado como CSV.");
+  const result = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: h => h.replace(/^\ufeff/,"").trim().toLowerCase()
   });
-  if(!result.data.length)throw new Error("CSV vacío o sin datos");
+  if(!result.data.length) throw new Error("CSV vacío");
   return result.data;
 }
 
-function findCol(headers,candidates){return candidates.find(c=>headers.some(h=>h.includes(c)))||"";}
+// ═══════════════════════════════════════════════════
+// COLUMN FINDER — columnas exactas conocidas
+// ═══════════════════════════════════════════════════
+// Columnas precios (después de toLowerCase):
+// nombre hotel | estrellas | rating | reseñas | dirección | url hotel
+// tipo de habitación | área (m2) | precio (usd) | precio x m2
+// tamaño de cama | número de camas | cancelación gratuita | tipo de cancelación
+// fecha de actualizacion
 
-async function loadSheetA(url){
-  url=url||document.getElementById("sheetA").value.trim();
-  if(!url)return;
-  const btn=document.getElementById("btnSheetA");btn.disabled=true;btn.textContent="Cargando...";
+function col(row, ...names){
+  for(const n of names){
+    if(row[n] !== undefined && row[n] !== null && row[n] !== "") return String(row[n]);
+  }
+  return "";
+}
+
+// ═══════════════════════════════════════════════════
+// ENV A — MI HOTEL
+// ═══════════════════════════════════════════════════
+const ISSUES = [
+  {t:"Puerta principal cierra a las 10pm",d:"Fricción — huéspedes esperan o llaman por WhatsApp",p:"u"},
+  {t:"Recepción oculta sin señalización",d:"Difícil de encontrar cuando cafetería está desatendida",p:"u"},
+  {t:"Tarjeta de acceso con fallas",d:"Problema ya reportado antes y sin resolver aún",p:"u"},
+  {t:"Sin personal que hable inglés",d:"Impacta a huéspedes internacionales",p:"h"},
+  {t:"Café de baja calidad",d:"Mencionado negativamente por 2 huéspedes distintos",p:"h"},
+];
+const CATS = [
+  {n:"Ubicación",v:10,c:"#2dd896"},{n:"Limpieza",v:10,c:"#2dd896"},
+  {n:"Confort",v:10,c:"#2dd896"},{n:"Personal",v:9.0,c:"#f5a623"},
+  {n:"Instalaciones",v:9.0,c:"#f5a623"},{n:"Calidad/precio",v:9.1,c:"#f5a623"},
+];
+const AV_BG  = ["#0b2017","#0d1c36","#2a1c08","#280e0e","#1b1330"];
+const AV_CLR = ["#2dd896","#4a9eff","#f5a623","#f05252","#a78bfa"];
+
+function renderIssues(){
+  document.getElementById("issuesA").innerHTML = ISSUES.map(i=>`
+    <div class="issue">
+      <div class="idot" style="background:${i.p==='u'?'var(--red)':'var(--amber)'}"></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:500;margin-bottom:2px">${i.t}</div>
+      <div style="font-size:11px;color:var(--text2)">${i.d}</div></div>
+      <span class="ib" style="background:${i.p==='u'?'var(--rdim)':'var(--adim)'};color:${i.p==='u'?'var(--red)':'var(--amber)'}">${i.p==='u'?'URGENTE':'PRIORITARIO'}</span>
+    </div>`).join("");
+}
+
+function renderCats(){
+  document.getElementById("catsA").innerHTML = CATS.map(c=>`
+    <div class="cat">
+      <div class="cat-meta"><span>${c.n}</span><span style="color:${c.c}">${c.v}</span></div>
+      <div class="bar-bg"><div class="bar-f" style="width:${c.v*10}%;background:${c.c}"></div></div>
+    </div>`).join("");
+}
+
+function revCard(r, i){
+  const init = (r.reviewer||r.titulo||"?").substring(0,2).toUpperCase();
+  const sc = parseFloat(r.score)||0;
+  const scColor = sc>=9?"#2dd896":sc>=7?"#f5a623":"#f05252";
+  return `<div class="rev">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="av" style="background:${AV_BG[i%5]};color:${AV_CLR[i%5]}">${init}</div>
+        <div><div style="font-size:12px;font-weight:500">${r.reviewer||r.titulo||"—"}</div>
+        <div style="font-size:10px;color:var(--text2)">${r.country} · ${r.date}</div></div>
+      </div>
+      <div style="font-size:18px;font-weight:600;color:${scColor}">${sc||"—"}</div>
+    </div>
+    ${r.pos?`<div class="rtxt" style="color:var(--text2)">✓ ${r.pos}</div>`:""}
+    ${r.neg?`<div class="rtxt" style="color:var(--red);opacity:.85">✕ ${r.neg}</div>`:""}
+  </div>`;
+}
+
+async function loadA(){
+  const url = document.getElementById("urlA").value.trim() || URL_RESENAS;
+  document.getElementById("stA").textContent = "Cargando...";
   try{
-    const data=await parseCSV(url);
-    // Filtrar solo filas de BoH
-    const boh=data.filter(r=>{
-      const h=(r["hotel"]||r["nombre hotel"]||"").toLowerCase();
-      return h.includes("boh");
-    });
-    const rows=boh.length?boh:data; // fallback a todos si no encuentra BoH
-    const mapped=rows.map(r=>({
-      reviewer:r["reviewer"]||r["titulo"]||r["reviewtitle"]||r["nombre"]||"",
-      country:r["pais"]||r["país"]||r["country"]||"",
-      date:r["fecha"]||r["fecha reseña"]||"",
-      score:parseFloat(r["score"]||r["rating"]||r["puntuacion"])||0,
-      pos:r["le gusto"]||r["le gustó"]||r["positivo"]||r["texto positivo"]||"",
-      neg:r["no le gusto"]||r["no le gustó"]||r["negativo"]||r["texto negativo"]||"",
-      tags:[]
+    const data = await fetchCSV(url);
+    localStorage.setItem("bohUrlA", url);
+
+    // Filter BoH only
+    const boh = data.filter(r => col(r,"hotel").toLowerCase().includes("boh"));
+    const rows = boh.length ? boh : data;
+
+    // Map to display objects
+    const mapped = rows.map(r=>({
+      reviewer: col(r,"reviewer"),
+      titulo:   col(r,"titulo"),
+      country:  col(r,"pais"),
+      date:     col(r,"fecha"),
+      score:    parseFloat(col(r,"score"))||0,
+      pos:      col(r,"le gusto"),
+      neg:      col(r,"no le gusto"),
     }));
-    document.getElementById("reviewsA").innerHTML=mapped.map((r,i)=>revHTML(r,i)).join("");
-    const scores=mapped.map(r=>r.score).filter(s=>s>0);
-    const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):"—";
-    document.getElementById("kA-score").textContent=avg;
-    document.getElementById("kA-count").textContent=mapped.length;
-    const now=new Date();
-    document.getElementById("syncBadge").textContent="✓ "+now.toLocaleDateString("es-CO",{day:"2-digit",month:"short"})+" "+now.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
-    localStorage.setItem("boh_url_a",url);
-    localStorage.setItem("boh_sync_a",now.toISOString());
-    const sorted=[...mapped].filter(r=>r.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
-    if(sorted.length)renderChart(sorted.map(r=>r.date),sorted.map(r=>r.score));
-    document.getElementById("stA").innerHTML=`<div class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div><span style="color:var(--green)">${mapped.length} reseñas BoH · guardado</span>`;
+
+    document.getElementById("revsA").innerHTML = mapped.map((r,i)=>revCard(r,i)).join("") || "<div class='empty'>Sin reseñas</div>";
+
+    const scores = mapped.map(r=>r.score).filter(s=>s>0);
+    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : "—";
+    document.getElementById("kA-score").textContent = avg;
+    document.getElementById("kA-count").textContent = mapped.length;
+    document.getElementById("syncBadge").textContent = "✓ " + new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"short"});
+
+    const sorted = [...mapped].filter(r=>r.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if(sorted.length) renderChartA(sorted.map(r=>r.date), sorted.map(r=>r.score));
+
+    document.getElementById("stA").textContent = mapped.length+" reseñas BoH";
   }catch(e){
-    document.getElementById("stA").innerHTML=`<span style="color:var(--amber)">Error: ${e.message}</span>`;
+    document.getElementById("stA").textContent = "Error: "+e.message;
   }
-  btn.disabled=false;btn.textContent="Actualizar";
 }
 
-async function loadSheetB(url){
-  url=url||document.getElementById("sheetB").value.trim();
-  if(!url)return;
-  const btn=document.getElementById("btnSheetB");btn.disabled=true;btn.textContent="Cargando...";
+function renderChartA(labels, data){
+  const old = Chart.getChart("chartA"); if(old) old.destroy();
+  new Chart(document.getElementById("chartA").getContext("2d"),{
+    type:"line",
+    data:{labels,datasets:[{label:"Score",data,borderColor:"#2dd896",backgroundColor:"rgba(45,216,150,.06)",borderWidth:2,pointBackgroundColor:"#2dd896",pointRadius:4,tension:.4,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10}}},
+              y:{min:5,max:10,grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10},stepSize:1}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ENV B — COMPETIDORES
+// ═══════════════════════════════════════════════════
+let _compData = [], _compHotel = "";
+
+async function loadB(){
+  const url = document.getElementById("urlB").value.trim() || URL_RESENAS;
+  document.getElementById("stB").textContent = "Cargando...";
   try{
-    const data=await parseCSV(url);
-    window._compData=data;
-    // Usar columna "hotel" exacta (primer match exacto, no parcial)
-    const hotelKey=Object.keys(data[0]||{}).find(k=>k==="hotel"||k==="nombre hotel")||"hotel";
-    const allHotels=[...new Set(data.map(r=>r[hotelKey]||""))].filter(h=>h&&h.length>1);
-    // BoH primero con estrella, luego competidores
-    const bohEntry=allHotels.find(h=>h.toLowerCase().includes("boh"))||"";
-    const competitors=allHotels.filter(h=>!h.toLowerCase().includes("boh"));
-    const hotels=[...( bohEntry?[bohEntry]:[]),...competitors];
-    const hs=document.getElementById("hotelSelect");
-    hs.innerHTML=hotels.map((h,i)=>{
-      const isBoh=h.toLowerCase().includes("boh");
-      return `<div class="hbtn${i===0?" sel":""}" style="${isBoh?"background:var(--gdim);border-color:var(--green);color:var(--green)":""}" onclick="selectHotel(this,'${h.replace(/'/g,"\\\'")}')">${isBoh?"★ ":""}${h}</div>`;
+    const data = await fetchCSV(url);
+    _compData = data;
+    localStorage.setItem("bohUrlB", url);
+
+    const hotelKey = Object.keys(data[0]).find(k=>k==="hotel") || "hotel";
+    const allHotels = [...new Set(data.map(r=>r[hotelKey]||""))].filter(h=>h.length>1);
+    const boh = allHotels.find(h=>h.toLowerCase().includes("boh"))||"";
+    const others = allHotels.filter(h=>!h.toLowerCase().includes("boh"));
+    const hotels = [...(boh?[boh]:[]), ...others];
+
+    const btns = document.getElementById("hotelBtns");
+    btns.innerHTML = hotels.map((h,i)=>{
+      const isBoh = h.toLowerCase().includes("boh");
+      return `<div class="hbtn${i===0?" sel":""} ${isBoh?"boh-btn":""}" onclick="selectHotel(this,'${h.replace(/'/g,"\\'")}')">${isBoh?"★ ":""}${h}</div>`;
     }).join("");
-    if(hotels[0])renderCompReviews(hotels[0],data);
-    localStorage.setItem("boh_url_b",url);
-    document.getElementById("stB").innerHTML=`<span style="color:var(--purple)">${data.length} reseñas · ${hotels.length} hoteles · guardado</span>`;
+
+    if(hotels[0]) showCompReviews(hotels[0]);
+
+    // Bar chart — avg score per hotel
+    const grouped = {};
+    data.forEach(r=>{
+      const h=r[hotelKey]||""; const s=parseFloat(r["score"])||0;
+      if(!h||!s) return;
+      if(!grouped[h]){grouped[h]={sum:0,count:0};}
+      grouped[h].sum+=s; grouped[h].count++;
+    });
+    const sorted = Object.entries(grouped).map(([n,v])=>({n,avg:+(v.sum/v.count).toFixed(1)})).sort((a,b)=>b.avg-a.avg).slice(0,15);
+    renderChartB(sorted.map(e=>e.n), sorted.map(e=>e.avg), boh);
+
+    document.getElementById("stB").textContent = data.length+" reseñas · "+hotels.length+" hoteles";
   }catch(e){
-    document.getElementById("stB").innerHTML=`<span style="color:var(--amber)">Error: ${e.message}</span>`;
+    document.getElementById("stB").textContent = "Error: "+e.message;
   }
-  btn.disabled=false;btn.textContent="Actualizar";
 }
 
-function forgetA(){
-  localStorage.removeItem("boh_url_a");localStorage.removeItem("boh_sync_a");
-  document.getElementById("sheetA").value="";
-  document.getElementById("stA").innerHTML="<span>URL eliminada</span>";
-  document.getElementById("btnSheetA").textContent="Cargar";
-}
-function forgetB(){
-  localStorage.removeItem("boh_url_b");
-  document.getElementById("sheetB").value="";
-  document.getElementById("stB").innerHTML="<span>URL eliminada</span>";
-  document.getElementById("btnSheetB").textContent="Cargar";
+function selectHotel(el, name){
+  document.querySelectorAll(".hbtn").forEach(b=>b.classList.remove("sel"));
+  el.classList.add("sel");
+  showCompReviews(name);
 }
 
-async function loadSheetC(url){
-  url=url||document.getElementById("sheetC").value.trim();
-  if(!url)return;
-  const btn=document.getElementById("btnSheetC");btn.disabled=true;btn.textContent="Cargando...";
+function showCompReviews(hotel){
+  _compHotel = hotel;
+  const hotelKey = Object.keys(_compData[0]||{}).find(k=>k==="hotel")||"hotel";
+  const rows = _compData.filter(r=>(r[hotelKey]||"")===hotel).slice(0,20);
+  document.getElementById("compTitle").innerHTML = `Reseñas · <span style="color:var(--purple)">${hotel}</span>`;
+  document.getElementById("revsB").innerHTML = rows.length
+    ? rows.map((r,i)=>revCard({reviewer:r["reviewer"],titulo:r["titulo"],country:r["pais"]||"",date:r["fecha"]||"",score:parseFloat(r["score"])||0,pos:r["le gusto"]||"",neg:r["no le gusto"]||""},i)).join("")
+    : "<div class='empty'>Sin reseñas</div>";
+}
+
+function renderChartB(labels, data, boh){
+  const old = Chart.getChart("chartB"); if(old) old.destroy();
+  const colors = labels.map(l=>l.toLowerCase().includes("boh")?"#2dd896":"#4a9eff");
+  new Chart(document.getElementById("chartB").getContext("2d"),{
+    type:"bar",
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4}]},
+    options:{
+      indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{min:5,max:10,grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:"#8b909e",font:{size:9}}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ENV C — PRECIOS
+// ═══════════════════════════════════════════════════
+let _priceData = [], _priceSort = "adr", _detailSort = "adr", _detailHotel = null;
+
+async function loadC(){
+  const url = document.getElementById("urlC").value.trim() || URL_PRECIOS;
+  document.getElementById("stC").textContent = "Cargando...";
   try{
-    const data=await parseCSV(url);
-    if(!data.length)throw new Error("Sin datos");
-    window._priceData=data;
-    localStorage.setItem("boh_url_c",url);
-    // Fecha de actualización
-    const fechas=data.map(r=>r["fecha de actualizacion"]||r["fecha de actualización"]||"").filter(f=>f);
-    if(fechas.length)document.getElementById("kC-fecha").textContent=fechas[0];
-    applyFilter();
-    // Debug — muestra columnas detectadas
-    const cols=detectCols(data);
-    const dbg=document.getElementById("priceDebug");
-    if(dbg)dbg.textContent="Columnas detectadas → hotel:"+cols.hotel+" | precio:"+cols.precio+" | m2:"+cols.m2+" | room:"+cols.room+" | Muestra precio fila1: "+JSON.stringify(data[0]?.[cols.precio]);
-    // Poblar KPIs de precios en pestaña Mi hotel
-    updateBohPriceKPIs(data);
-    document.getElementById("stC").innerHTML=`<span style="color:var(--amber)">${data.length} filas · guardado</span>`;
+    const data = await fetchCSV(url);
+    _priceData = data;
+    localStorage.setItem("bohUrlC", url);
+
+    // Show what keys we got
+    const keys = Object.keys(data[0]||{});
+    console.log("Price CSV keys:", keys);
+
+    // Fecha
+    const fk = keys.find(k=>k.includes("fecha"))||"";
+    if(fk && data[0][fk]) document.getElementById("kC-fecha").textContent = data[0][fk];
+
+    filterC();
+    updateBohPriceKPIs(data, keys);
+    document.getElementById("stC").textContent = data.length+" filas";
   }catch(e){
-    document.getElementById("stC").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+    document.getElementById("stC").textContent = "Error: "+e.message;
+    console.error(e);
   }
-  btn.disabled=false;btn.textContent="Actualizar";
 }
 
-function detectCols(data){
-  if(!data||!data.length)return {};
-  const keys=Object.keys(data[0]);
-  console.log("CSV keys:",keys);
-  const exact=n=>keys.find(k=>k===n)||"";
-  const has=(...t)=>keys.find(k=>t.every(s=>k.includes(s)))||"";
-  return {
-    hotel:  exact("nombre hotel")||has("nombre","hotel")||has("hotel"),
-    precio: exact("precio (usd)")||
-            keys.find(k=>k.includes("precio")&&k.includes("usd"))||
-            keys.find(k=>k.includes("precio")&&!k.includes("m2")&&!k.includes("x"))||"",
-    m2:     exact("precio x m2")||has("precio","m2"),
-    rating: exact("rating")||has("rating"),
-    room:   exact("tipo de habitación")||exact("tipo de habitacion")||has("habitaci"),
-    area:   exact("área (m2)")||exact("area (m2)")||keys.find(k=>k.includes("rea")&&k.includes("m2"))||"",
-    beds:   exact("número de camas")||exact("numero de camas")||has("camas"),
-    bedsize:exact("tamaño de cama")||exact("tamano de cama")||has("cama"),
-    cancel: exact("tipo de cancelación")||exact("tipo de cancelacion")||has("cancelaci"),
-    fecha:  exact("fecha de actualizacion")||exact("fecha de actualización")||has("fecha","actual")
-  };
+function getPrice(row, keys){
+  // Try all known variants of the price column
+  const candidates = ["precio (usd)","precio(usd)","precio usd","precio","price","adr","tarifa"];
+  for(const c of candidates){
+    const k = keys.find(k2=>k2===c);
+    if(k && row[k] && parseFloat(row[k])>0) return parseFloat(row[k]);
+  }
+  // Fallback: find any numeric column that looks like a price
+  for(const k of keys){
+    if(k.includes("precio")&&!k.includes("m2")&&!k.includes("x")){
+      const v = parseFloat(row[k]);
+      if(v>0) return v;
+    }
+  }
+  return 0;
 }
 
-function getVal(row,key){
-  if(!key||!row)return "";
-  return (row[key]||"").toString().trim();
+function getM2(row, keys){
+  const candidates = ["precio x m2","precio/m2","precio_m2","preciom2","precio x m²"];
+  for(const c of candidates){
+    const k = keys.find(k2=>k2===c);
+    if(k && row[k] && parseFloat(row[k])>0) return parseFloat(row[k]);
+  }
+  for(const k of keys){
+    if(k.includes("precio")&&(k.includes("m2")||k.includes("x"))){
+      const v = parseFloat(row[k]);
+      if(v>0) return v;
+    }
+  }
+  return 0;
 }
 
-function applyFilter(){
-  const data=window._priceData||[];
-  if(!data.length)return;
-  const cols=detectCols(data);
-  window._priceCols=cols;
-  const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
-  const filtered=cancelVal==="all"?data:data.filter(r=>{
-    const c=getVal(r,cols.cancel).toLowerCase();
-    return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
+function getHotel(row, keys){
+  const k = keys.find(k2=>k2==="nombre hotel")||keys.find(k2=>k2.includes("nombre")&&k2.includes("hotel"))||keys[0];
+  return row[k]||"";
+}
+
+function getCancel(row, keys){
+  const k = keys.find(k2=>k2==="tipo de cancelación")||keys.find(k2=>k2==="tipo de cancelacion")||keys.find(k2=>k2.includes("cancelaci"))||"";
+  return k ? (row[k]||"").toLowerCase() : "";
+}
+
+function filterC(){
+  if(!_priceData.length) return;
+  const keys = Object.keys(_priceData[0]);
+  const cancelVal = document.querySelector('input[name="cancelF"]:checked')?.value||"all";
+  const filtered = cancelVal==="all" ? _priceData : _priceData.filter(r=>{
+    const c = getCancel(r, keys);
+    return c===cancelVal || c.replace("_","")===cancelVal.replace("_","");
   });
-  renderKPIs(filtered,cols);
-  renderHotelTable(filtered,cols);
-  renderDetailTable(filtered,cols,null);
+  renderPriceKPIs(filtered, keys);
+  renderHotelTable(filtered, keys);
+  renderDetailTable(filtered, keys, _detailHotel);
 }
 
-function renderKPIs(data,cols){
-  const prices=data.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
-  const m2s=data.map(r=>parseFloat(getVal(r,cols.m2))||0).filter(p=>p>0);
-  const avg=prices.length?(prices.reduce((a,b)=>a+b,0)/prices.length):0;
-  const m2avg=m2s.length?(m2s.reduce((a,b)=>a+b,0)/m2s.length):0;
-  const max=prices.length?Math.max(...prices):0;
-  document.getElementById("kC-avg").textContent=avg?"$"+avg.toFixed(2):"—";
-  document.getElementById("kC-m2avg").textContent=m2avg?"$"+m2avg.toFixed(2):"—";
-  document.getElementById("kC-max").textContent=max?"$"+max.toFixed(2):"—";
-  document.getElementById("kC-count").textContent=data.length;
+function renderPriceKPIs(data, keys){
+  const prices = data.map(r=>getPrice(r,keys)).filter(p=>p>0);
+  const m2s    = data.map(r=>getM2(r,keys)).filter(p=>p>0);
+  const avg  = prices.length ? prices.reduce((a,b)=>a+b,0)/prices.length : 0;
+  const m2avg= m2s.length   ? m2s.reduce((a,b)=>a+b,0)/m2s.length     : 0;
+  const max  = prices.length ? Math.max(...prices) : 0;
+  document.getElementById("kC-avg").textContent = avg  ? "$"+avg.toFixed(2)  : "—";
+  document.getElementById("kC-m2").textContent  = m2avg? "$"+m2avg.toFixed(2): "—";
+  document.getElementById("kC-max").textContent = max  ? "$"+max.toFixed(2)  : "—";
+  document.getElementById("kC-cnt").textContent = data.length;
 }
 
-let _hotelSort="adr";
-function sortHotel(col){_hotelSort=col;applyFilter();}
+let _sortADR = "desc";
+function sortC(col){ _priceSort=col; filterC(); }
 
-function renderHotelTable(data,cols){
-  const grouped={};
+function renderHotelTable(data, keys){
+  const grouped = {};
   data.forEach(r=>{
-    const h=getVal(r,cols.hotel);
-    const p=parseFloat(getVal(r,cols.precio))||0;
-    const m=parseFloat(getVal(r,cols.m2))||0;
-    const rt=parseFloat(getVal(r,cols.rating))||0;
-    if(!h||!p)return;
-    if(!grouped[h])grouped[h]={sum:0,m2sum:0,count:0,rating:rt,esBoh:h.toLowerCase().includes("boh")};
-    grouped[h].sum+=p;grouped[h].m2sum+=m;grouped[h].count++;
-    if(rt)grouped[h].rating=rt;
+    const h=getHotel(r,keys); const p=getPrice(r,keys); const m=getM2(r,keys);
+    const rt = parseFloat(col(r,"rating","estrellas"))||0;
+    if(!h||!p) return;
+    if(!grouped[h]) grouped[h]={sum:0,m2sum:0,count:0,rating:rt,boh:h.toLowerCase().includes("boh")};
+    grouped[h].sum+=p; grouped[h].m2sum+=m; grouped[h].count++;
+    if(rt) grouped[h].rating=rt;
   });
-  let entries=Object.entries(grouped).map(([name,v])=>({name,adr:v.sum/v.count,m2:v.m2sum/v.count,rating:v.rating,esBoh:v.esBoh}));
-  entries.sort((a,b)=>_hotelSort==="m2"?b.m2-a.m2:b.adr-a.adr);
-  const tb=document.getElementById("priceTable");
-  tb.innerHTML=entries.map((e,i)=>`<tr class="${e.esBoh?"boh-row":""}" style="cursor:pointer" onclick="filterDetail('${e.name.replace(/'/g,"\'")}')">
-    <td style="color:var(--text3);font-size:11px">${i+1}</td>
-    <td style="font-weight:${e.esBoh?"600":"400"}">${e.esBoh?"★ ":""}${e.name}</td>
-    <td style="text-align:right;font-family:var(--mono)">${e.rating||"—"}</td>
-    <td style="text-align:right;font-family:var(--mono);color:var(--amber)">$${e.adr.toFixed(2)}</td>
-    <td style="text-align:right;font-family:var(--mono)">$${e.m2.toFixed(2)}</td>
-  </tr>`).join("");
-  document.getElementById("thADR").textContent=_hotelSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)";
-  document.getElementById("thM2").textContent=_hotelSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom";
+  const entries = Object.entries(grouped).map(([n,v])=>({n,adr:v.sum/v.count,m2:v.m2sum/v.count,rating:v.rating,boh:v.boh}));
+  entries.sort((a,b)=>_priceSort==="m2"?b.m2-a.m2:b.adr-a.adr);
+  document.getElementById("thADR").textContent = _priceSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)";
+  document.getElementById("thM2").textContent  = _priceSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom";
+  document.getElementById("tblHotel").innerHTML = entries.map((e,i)=>`
+    <tr class="${e.boh?"boh":""}" style="cursor:pointer" onclick="filterDetail('${e.n.replace(/'/g,"\\'")}')">
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-weight:${e.boh?600:400}">${e.boh?"★ ":""}${e.n}</td>
+      <td class="mono" style="text-align:right">${e.rating||"—"}</td>
+      <td class="mono amber" style="text-align:right">$${e.adr.toFixed(2)}</td>
+      <td class="mono" style="text-align:right">$${e.m2.toFixed(2)}</td>
+    </tr>`).join("");
 }
 
-let _detailSort="adr",_detailHotel=null;
-function sortDetail(col){_detailSort=col;const c=window._priceCols||detectCols(window._priceData||[]);renderDetailTable(window._priceData||[],c,_detailHotel);}
 function filterDetail(hotel){
-  _detailHotel=hotel;
-  document.getElementById("detailHotelLabel").textContent=hotel;
-  const c=window._priceCols||detectCols(window._priceData||[]);
-  renderDetailTable(window._priceData||[],c,hotel);
+  _detailHotel = hotel;
+  document.getElementById("detailLabel").textContent = hotel;
+  if(_priceData.length) renderDetailTable(_priceData, Object.keys(_priceData[0]), hotel);
 }
 
-function renderDetailTable(data,cols,hotel){
-  const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
-  let rows=cancelVal==="all"?data:data.filter(r=>{
-    const c=getVal(r,cols.cancel).toLowerCase();
-    return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
+function sortDetail(col){ _detailSort=col; if(_priceData.length) renderDetailTable(_priceData, Object.keys(_priceData[0]), _detailHotel); }
+
+function renderDetailTable(data, keys, hotel){
+  const cancelVal = document.querySelector('input[name="cancelF"]:checked')?.value||"all";
+  let rows = cancelVal==="all" ? data : data.filter(r=>{
+    const c=getCancel(r,keys); return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
   });
-  if(hotel)rows=rows.filter(r=>getVal(r,cols.hotel)===hotel);
-  rows=rows.filter(r=>parseFloat(getVal(r,cols.precio))||0);
-  rows.sort((a,b)=>_detailSort==="m2"?(parseFloat(getVal(b,cols.m2))||0)-(parseFloat(getVal(a,cols.m2))||0):(parseFloat(getVal(b,cols.precio))||0)-(parseFloat(getVal(a,cols.precio))||0));
-  const tb=document.getElementById("detailTable");
-  tb.innerHTML=rows.slice(0,100).map((r,i)=>{
-    const adr=parseFloat(getVal(r,cols.precio))||0;
-    const m2=parseFloat(getVal(r,cols.m2))||0;
+  if(hotel) rows = rows.filter(r=>getHotel(r,keys)===hotel);
+  rows = rows.filter(r=>getPrice(r,keys)>0);
+  rows.sort((a,b)=>_detailSort==="m2"?getM2(b,keys)-getM2(a,keys):getPrice(b,keys)-getPrice(a,keys));
+
+  // Find exact column keys for display
+  const roomK   = keys.find(k=>k.includes("habitaci"))||"";
+  const areaK   = keys.find(k=>k.includes("rea")&&k.includes("m2"))||keys.find(k=>k.includes("area"))||"";
+  const bedsK   = keys.find(k=>k.includes("camas"))||"";
+  const bedszK  = keys.find(k=>k.includes("ama")&&k.includes("cama"))||keys.find(k=>k.includes("tama"))||"";
+
+  document.getElementById("tblDetail").innerHTML = rows.slice(0,100).map((r,i)=>{
+    const p=getPrice(r,keys), m=getM2(r,keys);
     return `<tr>
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
-      <td style="font-size:11px">${getVal(r,cols.room)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${getVal(r,cols.area)}</td>
-      <td style="text-align:right;font-family:var(--mono)">${getVal(r,cols.beds)}</td>
-      <td style="font-size:10px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getVal(r,cols.bedsize)}</td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--amber)">${adr?"$"+adr.toFixed(2):"—"}</td>
-      <td style="text-align:right;font-family:var(--mono)">${m2?"$"+m2.toFixed(2):"—"}</td>
+      <td style="font-size:11px">${roomK?r[roomK]||"":""}</td>
+      <td class="mono" style="text-align:right">${areaK?r[areaK]||"":""}</td>
+      <td class="mono" style="text-align:right">${bedsK?r[bedsK]||"":""}</td>
+      <td style="font-size:10px;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${bedszK?r[bedszK]||"":""}</td>
+      <td class="mono amber" style="text-align:right">${p?"$"+p.toFixed(2):"—"}</td>
+      <td class="mono" style="text-align:right">${m?"$"+m.toFixed(2):"—"}</td>
     </tr>`;
   }).join("");
 }
 
-
-function updateBohPriceKPIs(data){
-  const cols=detectCols(data);
-  // ADR BoH
-  const bohRows=data.filter(r=>getVal(r,cols.hotel).toLowerCase().includes("boh"));
-  const bohPrices=bohRows.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
-  const bohAvg=bohPrices.length?(bohPrices.reduce((a,b)=>a+b,0)/bohPrices.length):0;
-  // ADR mercado (todos)
-  const allPrices=data.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
-  const mktAvg=allPrices.length?(allPrices.reduce((a,b)=>a+b,0)/allPrices.length):0;
-  // Posición de BoH entre hoteles por ADR promedio
-  const grouped={};
-  data.forEach(r=>{
-    const h=getVal(r,cols.hotel);const p=parseFloat(getVal(r,cols.precio))||0;
-    if(!h||!p)return;
-    if(!grouped[h])grouped[h]={sum:0,count:0};
-    grouped[h].sum+=p;grouped[h].count++;
-  });
-  const ranked=Object.entries(grouped).map(([n,v])=>({n,avg:v.sum/v.count})).sort((a,b)=>b.avg-a.avg);
-  const rank=ranked.findIndex(e=>e.n.toLowerCase().includes("boh"))+1;
-  const diff=bohAvg&&mktAvg?(((bohAvg-mktAvg)/mktAvg)*100):0;
-  document.getElementById("kA-adr").textContent=bohAvg?"$"+bohAvg.toFixed(0):"—";
-  document.getElementById("kA-mkt").textContent=mktAvg?"$"+mktAvg.toFixed(0):"—";
-  const diffEl=document.getElementById("kA-diff");
-  diffEl.textContent=diff?(diff>0?"+":"")+diff.toFixed(1)+"%":"—";
-  diffEl.className="kpi-v "+(diff>0?"vr":diff<0?"vg":"va"); // rojo si más caro, verde si más barato
-  document.getElementById("kA-rank").textContent=rank?"#"+rank+" / "+ranked.length:"—";
-}
-function forgetC(){
-  localStorage.removeItem("boh_url_c");
-  document.getElementById("sheetC").value="";
-  document.getElementById("stC").innerHTML="<span>URL eliminada</span>";
-  document.getElementById("btnSheetC").textContent="Cargar";
+function updateBohPriceKPIs(data, keys){
+  const boh   = data.filter(r=>getHotel(r,keys).toLowerCase().includes("boh"));
+  const bPrices = boh.map(r=>getPrice(r,keys)).filter(p=>p>0);
+  const aPrices = data.map(r=>getPrice(r,keys)).filter(p=>p>0);
+  const bAvg = bPrices.length?bPrices.reduce((a,b)=>a+b,0)/bPrices.length:0;
+  const aAvg = aPrices.length?aPrices.reduce((a,b)=>a+b,0)/aPrices.length:0;
+  const grouped = {};
+  data.forEach(r=>{const h=getHotel(r,keys);const p=getPrice(r,keys);if(!h||!p)return;if(!grouped[h])grouped[h]={s:0,c:0};grouped[h].s+=p;grouped[h].c++;});
+  const ranked = Object.entries(grouped).map(([n,v])=>({n,a:v.s/v.c})).sort((a,b)=>b.a-a.a);
+  const rank = ranked.findIndex(e=>e.n.toLowerCase().includes("boh"))+1;
+  const diff = bAvg&&aAvg?(((bAvg-aAvg)/aAvg)*100):0;
+  document.getElementById("kA-adr").textContent  = bAvg?"$"+bAvg.toFixed(0):"—";
+  document.getElementById("kA-mkt").textContent  = aAvg?"$"+aAvg.toFixed(0):"—";
+  const de = document.getElementById("kA-diff");
+  de.textContent  = diff?(diff>0?"+":"")+diff.toFixed(1)+"%":"—";
+  de.className    = "kv "+(diff>0?"kr":diff<0?"kg":"ka");
+  document.getElementById("kA-rank").textContent = rank?"#"+rank+" / "+ranked.length:"—";
 }
 
-function selectHotel(el,name){
-  document.querySelectorAll(".hbtn").forEach(b=>b.classList.remove("sel"));
-  el.classList.add("sel");
-  const data=window._compData||[];
-  renderCompReviews(name,data);
+// ═══════════════════════════════════════════════════
+// URL PERSISTENCE
+// ═══════════════════════════════════════════════════
+function clearUrl(tab){
+  localStorage.removeItem("bohUrl"+tab.toUpperCase());
+  document.getElementById("url"+tab.toUpperCase()).value="";
+  document.getElementById("st"+tab.toUpperCase()).textContent="URL borrada";
 }
 
-function renderCompReviews(name,data){
-  document.getElementById("compCardTitle").innerHTML=`Reseñas · <span style="color:var(--purple)">${name}</span>`;
-  const hotelKey=Object.keys(data[0]||{}).find(k=>k==="hotel"||k==="nombre hotel")||"hotel";
-  const filtered=data.filter(r=>r[hotelKey]===name).slice(0,10);
-  const rb=document.getElementById("reviewsB");
-  if(!filtered.length){rb.innerHTML=`<div class="empty">No hay reseñas de ${name}<br>en el Sheet cargado.</div>`;return;}
-  rb.innerHTML=filtered.map((r,i)=>revHTML({
-    reviewer:r["reviewer"]||"Anónimo",
-    country:r["pais"]||r["país"]||"",
-    date:r["fecha"]||"",
-    score:parseFloat(r["score"]||r["rating"])||0,
-    pos:r["le gusto"]||r["le gustó"]||"",
-    neg:r["no le gusto"]||r["no le gustó"]||"",
-    tags:[]
-  },i)).join("");
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function init(){
+  renderIssues();
+  renderCats();
+  renderChartA(["1 may","4 may","5 may","8 may"],[9,8,10,10]);
+
+  const urlA = localStorage.getItem("bohUrlA") || URL_RESENAS;
+  const urlB = localStorage.getItem("bohUrlB") || URL_RESENAS;
+  const urlC = localStorage.getItem("bohUrlC") || URL_PRECIOS;
+
+  document.getElementById("urlA").value = urlA;
+  document.getElementById("urlB").value = urlB;
+  document.getElementById("urlC").value = urlC;
+
+  loadA();
+  loadB();
+  loadC();
 }
 
-// ══════════════════════════════════════════════════
-// AI — ENV A (analizar reseña BoH)
-// ══════════════════════════════════════════════════
-async function analyzeA(){
-  const text=document.getElementById("inputA").value.trim();if(!text)return;
-  const btn=document.getElementById("btnA");const spin=document.getElementById("spinA");
-  btn.disabled=true;spin.style.display="block";document.getElementById("btxtA").textContent="Analizando...";
-  const res=document.getElementById("resA");res.classList.remove("show");
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,
-        system:`Analiza reseñas de BoH Manila, un hotel boutique en barrio Manila, Medellín. Responde SOLO JSON sin markdown:
-{"score_estimado":9.0,"sentimiento":"positivo","resumen":"1 frase","temas_positivos":["tema"],"temas_negativos":["tema"],"prioridad":"urgente|alta|media|baja","accion":"texto de acción específica para el equipo de BoH"}`,
-        messages:[{role:"user",content:`Reseña de BoH Manila:\n\n${text}`}]})});
-    const d=await r.json();
-    let p;try{p=JSON.parse(d.content[0].text.replace(/```json|```/g,"").trim());}catch{p=null;}
-    if(p){
-      const sc=scoreColor(p.score_estimado);
-      const pc=p.prioridad==="urgente"?"var(--red)":p.prioridad==="alta"?"var(--amber)":"var(--blue)";
-      res.innerHTML=`
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:13px;font-weight:500">Análisis · <span style="color:${sc}">${p.sentimiento}</span></div>
-          <div style="font-size:20px;font-weight:600;color:${sc}">${p.score_estimado}<span style="font-size:11px;color:var(--text3)">/10</span></div>
-        </div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6">${p.resumen}</div>
-        <div class="tags" style="margin-bottom:8px">${(p.temas_positivos||[]).map(t=>`<span class="tag tp">${t}</span>`).join("")}${(p.temas_negativos||[]).map(t=>`<span class="tag tn">${t}</span>`).join("")}</div>
-        <div class="action-box"><div class="action-label" style="color:${pc}">Acción ${p.prioridad}</div>${p.accion}</div>`;
-    }else{res.innerHTML=`<div style="font-size:11px">${d.content[0].text}</div>`;}
-    res.classList.add("show");
-  }catch(e){res.innerHTML=`<div style="font-size:11px;color:var(--red)">Error al conectar.</div>`;res.classList.add("show");}
-  btn.disabled=false;spin.style.display="none";document.getElementById("btxtA").textContent="Analizar reseña";
-}
-
-// ══════════════════════════════════════════════════
-// AI — ENV B (extraer lección de competidor)
-// ══════════════════════════════════════════════════
-async function analyzeB(){
-  const text=document.getElementById("inputB").value.trim();if(!text)return;
-  const hotelName=document.getElementById("compNameInput").value.trim()||"un competidor";
-  const btn=document.getElementById("btnB");const spin=document.getElementById("spinB");
-  btn.disabled=true;spin.style.display="block";document.getElementById("btxtB").textContent="Extrayendo lección...";
-  const res=document.getElementById("resB");res.classList.remove("show");
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-        system:`Eres consultor de hospitalidad. Analizas reseñas de hoteles competidores para extraer lecciones aplicables a BoH Manila, hotel boutique en barrio Manila, Medellín (score actual 9.4, fortalezas: ubicación, limpieza, diseño moderno, personal amable).
-
-Responde SOLO JSON sin markdown:
-{"error_del_competidor":"qué salió mal en ese hotel","por_que_ocurre":"causa raíz breve","ya_lo_resuelve_boh":true,"como_lo_resuelve_boh":"si ya lo resuelve, cómo","accion_boh":"si no lo resuelve, acción concreta para BoH","urgencia":"alta|media|baja","leccion_titulo":"título corto de la lección"}`,
-        messages:[{role:"user",content:`Reseña negativa de ${hotelName}:\n\n${text}`}]})});
-    const d=await r.json();
-    let p;try{p=JSON.parse(d.content[0].text.replace(/```json|```/g,"").trim());}catch{p=null;}
-    if(p){
-      const uc=p.urgencia==="alta"?"var(--red)":p.urgencia==="media"?"var(--amber)":"var(--blue)";
-      res.innerHTML=`
-        <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:var(--purple)">📌 ${p.leccion_titulo}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:5px"><span style="color:var(--text);font-weight:500">Error detectado: </span>${p.error_del_competidor}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px"><span style="color:var(--text);font-weight:500">Causa raíz: </span>${p.por_que_ocurre}</div>
-        ${p.ya_lo_resuelve_boh
-          ?`<div style="background:var(--gdim);border:1px solid rgba(45,216,150,.2);border-radius:7px;padding:10px;font-size:11px;line-height:1.6"><div style="color:var(--green);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">✓ BoH ya lo tiene resuelto</div>${p.como_lo_resuelve_boh}</div>`
-          :`<div class="action-box" style="border-color:${uc}"><div class="action-label" style="color:${uc}">Acción para BoH · urgencia ${p.urgencia}</div>${p.accion_boh}</div>`
-        }`;
-      // Append to lessons list
-      const ll=document.getElementById("lessonsB");
-      if(ll.querySelector(".empty"))ll.innerHTML="";
-      ll.innerHTML=`<div class="lesson">
-        <div class="lesson-header">
-          <div class="lesson-icon ${p.ya_lo_resuelve_boh?"li-green":"li-red"}">${p.ya_lo_resuelve_boh?"✓":"!"}</div>
-          <div><div class="lesson-hotel">${hotelName}</div><div class="lesson-title">${p.leccion_titulo}</div></div>
-        </div>
-        <div class="lesson-desc">${p.error_del_competidor}</div>
-        ${p.ya_lo_resuelve_boh
-          ?`<div class="lesson-apply" style="color:var(--green)">ya lo tenemos resuelto — ${p.como_lo_resuelve_boh}</div>`
-          :`<div class="lesson-apply">${p.accion_boh}</div>`}
-      </div>`+ll.innerHTML;
-    }else{res.innerHTML=`<div style="font-size:11px">${d.content[0].text}</div>`;}
-    res.classList.add("show");
-  }catch(e){res.innerHTML=`<div style="font-size:11px;color:var(--red)">Error al conectar.</div>`;res.classList.add("show");}
-  btn.disabled=false;spin.style.display="none";document.getElementById("btxtB").textContent="Extraer lección para BoH";
-}
-
-// ══════════════════════════════════════════════════
-initA();
-
-// Pre-cargar URL de precios
-const _priceUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv";
-const _reviewUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv&gid=2028313205";
-
-// Precios
-if(!localStorage.getItem("boh_url_c")) localStorage.setItem("boh_url_c",_priceUrl);
-const _sc=localStorage.getItem("boh_url_c")||_priceUrl;
-document.getElementById("sheetC").value=_sc;
-loadSheetC(_sc);
-
-// Reseñas — carga automática
-if(!localStorage.getItem("boh_url_a")) localStorage.setItem("boh_url_a",_reviewUrl);
-const _sa=localStorage.getItem("boh_url_a")||_reviewUrl;
-document.getElementById("sheetA").value=_sa;
-loadSheetA(_sa);
-
-// Reseñas competidores — mismo sheet, misma data
-if(!localStorage.getItem("boh_url_b")) localStorage.setItem("boh_url_b",_reviewUrl);
-const _sb=localStorage.getItem("boh_url_b")||_reviewUrl;
-document.getElementById("sheetB").value=_sb;
-loadSheetB(_sb);
+init();
 </script>
 </body>
 </html>
