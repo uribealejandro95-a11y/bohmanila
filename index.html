@@ -549,30 +549,33 @@ async function loadSheetA(url){
   const btn=document.getElementById("btnSheetA");btn.disabled=true;btn.textContent="Cargando...";
   try{
     const data=await parseCSV(url);
-    const keys=Object.keys(data[0]||{});
-    const nameC=findCol(keys,["reviewer","guest","huesped","nombre"]);
-    const dateC=findCol(keys,["date","fecha"]);
-    const scoreC=findCol(keys,["score","rating","puntuacion","nota"]);
-    const posC=findCol(keys,["pos","positive","bueno","liked"]);
-    const negC=findCol(keys,["neg","negative","malo","disliked"]);
-    const mapped=data.map(r=>({
-      reviewer:r[nameC]||"Anónimo",country:r["country"]||r["pais"]||"",
-      date:r[dateC]||"",score:parseFloat(r[scoreC])||8,
-      pos:r[posC]||"",neg:r[negC]||"",tags:[]
+    // Filtrar solo filas de BoH
+    const boh=data.filter(r=>{
+      const h=(r["hotel"]||r["nombre hotel"]||"").toLowerCase();
+      return h.includes("boh")||h.includes("manila");
+    });
+    const rows=boh.length?boh:data; // fallback a todos si no encuentra BoH
+    const mapped=rows.map(r=>({
+      reviewer:r["reviewer"]||r["nombre"]||"Anónimo",
+      country:r["pais"]||r["país"]||r["country"]||"",
+      date:r["fecha"]||r["fecha reseña"]||"",
+      score:parseFloat(r["score"]||r["rating"]||r["puntuacion"])||0,
+      pos:r["le gusto"]||r["le gustó"]||r["positivo"]||r["texto positivo"]||"",
+      neg:r["no le gusto"]||r["no le gustó"]||r["negativo"]||r["texto negativo"]||"",
+      tags:[]
     }));
     document.getElementById("reviewsA").innerHTML=mapped.map((r,i)=>revHTML(r,i)).join("");
-    const avg=(mapped.reduce((a,r)=>a+r.score,0)/mapped.length).toFixed(1);
+    const scores=mapped.map(r=>r.score).filter(s=>s>0);
+    const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):"—";
     document.getElementById("kA-score").textContent=avg;
     document.getElementById("kA-count").textContent=mapped.length;
     const now=new Date();
-    const timeStr=now.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
-    const dateStr=now.toLocaleDateString("es-CO",{day:"2-digit",month:"short"});
-    document.getElementById("syncBadge").textContent="✓ "+dateStr+" "+timeStr;
+    document.getElementById("syncBadge").textContent="✓ "+now.toLocaleDateString("es-CO",{day:"2-digit",month:"short"})+" "+now.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
     localStorage.setItem("boh_url_a",url);
     localStorage.setItem("boh_sync_a",now.toISOString());
-    const sorted=[...mapped].sort((a,b)=>new Date(a.date)-new Date(b.date));
-    renderChart(sorted.map(r=>r.date),sorted.map(r=>r.score));
-    document.getElementById("stA").innerHTML=`<div class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div><span style="color:var(--green)">${mapped.length} reseñas · guardado</span>`;
+    const sorted=[...mapped].filter(r=>r.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if(sorted.length)renderChart(sorted.map(r=>r.date),sorted.map(r=>r.score));
+    document.getElementById("stA").innerHTML=`<div class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div><span style="color:var(--green)">${mapped.length} reseñas BoH · guardado</span>`;
   }catch(e){
     document.getElementById("stA").innerHTML=`<span style="color:var(--amber)">Error: ${e.message}</span>`;
   }
@@ -586,12 +589,11 @@ async function loadSheetB(url){
   try{
     const data=await parseCSV(url);
     window._compData=data;
-    const hotels=[...new Set(data.map(r=>{
-      const k=Object.keys(r).find(k=>k.toLowerCase().includes("hotel")||k.toLowerCase().includes("name"));
-      return r[k]||"Desconocido";
-    }))].filter(h=>h&&h.length>1);
+    // Usar columna "hotel" exacta (primer match exacto, no parcial)
+    const hotelKey=Object.keys(data[0]||{}).find(k=>k==="hotel"||k==="nombre hotel")||"hotel";
+    const hotels=[...new Set(data.map(r=>r[hotelKey]||""))].filter(h=>h&&h.length>1&&!h.toLowerCase().includes("boh"));
     const hs=document.getElementById("hotelSelect");
-    hs.innerHTML=hotels.map((h,i)=>`<div class="hbtn${i===0?" sel":""}" onclick="selectHotel(this,'${h}')">${h}</div>`).join("");
+    hs.innerHTML=hotels.map((h,i)=>`<div class="hbtn${i===0?" sel":""}" onclick="selectHotel(this,'${h.replace(/'/g,"\\\'")}')">${h}</div>`).join("");
     if(hotels[0])renderCompReviews(hotels[0],data);
     localStorage.setItem("boh_url_b",url);
     document.getElementById("stB").innerHTML=`<span style="color:var(--purple)">${data.length} reseñas · ${hotels.length} hoteles · guardado</span>`;
@@ -625,7 +627,10 @@ async function loadSheetC(url){
     localStorage.setItem("boh_url_c",url);
 
     // KPIs BoH
-    const boh=data.filter(r=>(r["nombre hotel"]||"").toLowerCase().includes("boh"));
+    const boh=data.filter(r=>{
+      const h=(r["nombre hotel"]||r["hotel"]||"").toLowerCase();
+      return h.includes("boh")||h.includes("manila boutique")||h.includes("boh manila");
+    });
     const all=data.filter(r=>parseFloat(r["precio (usd)"])>0);
     const bohPrices=boh.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
     const allPrices=all.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
@@ -666,9 +671,9 @@ function renderPriceTable(data){
   const grouped={};
   data.forEach(r=>{
     const h=r["nombre hotel"]||r["hotel"]||"";
-    const p=parseFloat(r["precio (usd)"])||0;
+    const p=parseFloat(r["precio (usd)"]||r["precio"]||r["price"])||0;
     if(!h||!p)return;
-    if(!grouped[h])grouped[h]={min:p,max:p,sum:0,count:0,esBoh:h.toLowerCase().includes("boh")};
+    if(!grouped[h])grouped[h]={min:p,max:p,sum:0,count:0,esBoh:h.toLowerCase().includes("boh")||h.toLowerCase().includes("boh manila")};
     grouped[h].min=Math.min(grouped[h].min,p);
     grouped[h].max=Math.max(grouped[h].max,p);
     grouped[h].sum+=p;
@@ -716,20 +721,18 @@ function selectHotel(el,name){
 
 function renderCompReviews(name,data){
   document.getElementById("compCardTitle").innerHTML=`Reseñas · <span style="color:var(--purple)">${name}</span>`;
-  const keys=Object.keys(data[0]||{});
-  const hotelC=keys.find(k=>k.toLowerCase().includes("hotel")||k.toLowerCase().includes("name"))||keys[0];
-  const scoreC=keys.find(k=>k.toLowerCase().includes("score")||k.toLowerCase().includes("rating"))||keys[1];
-  const posC=keys.find(k=>k.toLowerCase().includes("pos")||k.toLowerCase().includes("liked"))||"";
-  const negC=keys.find(k=>k.toLowerCase().includes("neg")||k.toLowerCase().includes("disliked"))||"";
-  const dateC=keys.find(k=>k.toLowerCase().includes("date")||k.toLowerCase().includes("fecha"))||"";
-  const nameC=keys.find(k=>k.toLowerCase().includes("reviewer")||k.toLowerCase().includes("guest"))||"";
-  const filtered=data.filter(r=>r[hotelC]===name).slice(0,10);
+  const hotelKey=Object.keys(data[0]||{}).find(k=>k==="hotel"||k==="nombre hotel")||"hotel";
+  const filtered=data.filter(r=>r[hotelKey]===name).slice(0,10);
   const rb=document.getElementById("reviewsB");
   if(!filtered.length){rb.innerHTML=`<div class="empty">No hay reseñas de ${name}<br>en el Sheet cargado.</div>`;return;}
   rb.innerHTML=filtered.map((r,i)=>revHTML({
-    reviewer:r[nameC]||"Anónimo",country:r["country"]||r["pais"]||"",
-    date:r[dateC]||"",score:parseFloat(r[scoreC])||8,
-    pos:r[posC]||"",neg:r[negC]||"",tags:[]
+    reviewer:r["reviewer"]||"Anónimo",
+    country:r["pais"]||r["país"]||"",
+    date:r["fecha"]||"",
+    score:parseFloat(r["score"]||r["rating"])||0,
+    pos:r["le gusto"]||r["le gustó"]||"",
+    neg:r["no le gusto"]||r["no le gustó"]||"",
+    tags:[]
   },i)).join("");
 }
 
