@@ -538,6 +538,7 @@ async function loadC(){
     // Show what keys we got
     const keys = Object.keys(data[0]||{});
     console.log("Price CSV keys:", keys);
+    console.log("First row sample:", JSON.stringify(data[0]));
 
     // Fecha
     const fk = keys.find(k=>k.includes("fecha"))||"";
