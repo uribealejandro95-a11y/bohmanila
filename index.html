@@ -323,54 +323,124 @@ pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;paddi
 </div>
 
 <!-- ════════════════════════════════════════════════
-     ENV C — PRECIOS
+     ENV C — PRECIOS (replica Looker Studio)
 ═════════════════════════════════════════════════ -->
 <div class="env" id="env-c">
 
   <div class="sheet-strip">
     <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      Sheets precios (Apify)
+      Sheets precios
     </span>
     <input id="sheetC" placeholder="URL CSV del sheet de precios"/>
     <button class="sheet-btn" style="background:var(--amber);color:#1a0f00;font-weight:600;border:none;border-radius:7px;padding:6px 12px;font-size:11px;cursor:pointer" id="btnSheetC" onclick="loadSheetC()">Actualizar</button>
-    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetC()" title="Olvidar URL">✕</button>
+    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetC()">✕</button>
     <div class="conn-st" id="stC"><span>—</span></div>
   </div>
 
-  <!-- KPIs precios -->
-  <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
-    <div class="kpi"><div class="kpi-l">Precio promedio BoH</div><div class="kpi-v va" id="kC-avg">—</div><div class="kpi-s">USD / noche</div></div>
-    <div class="kpi"><div class="kpi-l">Rango BoH</div><div class="kpi-v vb" id="kC-range">—</div><div class="kpi-s">Min – Max</div></div>
-    <div class="kpi"><div class="kpi-l">Promedio mercado</div><div class="kpi-v vp" id="kC-mkt">—</div><div class="kpi-s">18 hoteles</div></div>
-    <div class="kpi"><div class="kpi-l">BoH vs mercado</div><div class="kpi-v va" id="kC-diff">—</div><div class="kpi-s">diferencia %</div></div>
-    <div class="kpi"><div class="kpi-l">Habitaciones BoH</div><div class="kpi-v vg" id="kC-rooms">—</div><div class="kpi-s">opciones activas</div></div>
+  <!-- Header tipo Looker -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+    <div>
+      <div style="font-size:20px;font-weight:600;color:var(--amber)">(BoH) Hotels — Benchmark Precios Competencia</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">*Precio de habitaciones disponibles para una reserva de 1 noche · 7 días</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Fecha de Actualización</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text)" id="kC-fecha">—</div>
+    </div>
   </div>
 
-  <!-- Tabla benchmark de precios -->
-  <div class="card">
-    <div class="ct">Benchmark de precios por hotel <span style="color:var(--text3);font-size:10px">★ BoH Manila resaltado</span></div>
-    <div style="overflow-x:auto">
-      <table class="price-table">
-        <thead>
-          <tr>
-            <th>Hotel</th>
-            <th>Precio mín</th>
-            <th>Precio máx</th>
-            <th>Promedio</th>
-            <th>Posición</th>
-            <th>Hab.</th>
-          </tr>
-        </thead>
-        <tbody id="priceTable">
-          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando datos...</td></tr>
-        </tbody>
-      </table>
+  <!-- Layout 2 columnas: tablas izq, KPIs+filtro der -->
+  <div style="display:grid;grid-template-columns:1fr 220px;gap:14px;align-items:start">
+
+    <!-- Columna izquierda: tablas -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Tabla 1: KPI General x Hotel -->
+      <div class="card">
+        <div class="ct">KPI General x Hotel</div>
+        <div style="overflow-x:auto">
+          <table class="price-table" id="tblHotel">
+            <thead><tr>
+              <th style="width:28px">#</th>
+              <th>Nombre Hotel</th>
+              <th style="text-align:right">Rating</th>
+              <th style="text-align:right;cursor:pointer" onclick="sortHotel('adr')" id="thADR">ADR Prom (USD) ▾</th>
+              <th style="text-align:right;cursor:pointer" onclick="sortHotel('m2')" id="thM2">ADR / m2 prom</th>
+            </tr></thead>
+            <tbody id="priceTable">
+              <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tabla 2: Detalle x habitación x hotel -->
+      <div class="card">
+        <div class="ct">Detalle x habitación x hotel <span style="color:var(--text3);font-size:10px" id="detailHotelLabel">todos los hoteles</span></div>
+        <div style="overflow-x:auto">
+          <table class="price-table" id="tblDetail">
+            <thead><tr>
+              <th style="width:28px">#</th>
+              <th>Tipo de Habitación</th>
+              <th style="text-align:right">Área (m2)</th>
+              <th style="text-align:right">Camas</th>
+              <th style="text-align:left">Tamaño de Cama</th>
+              <th style="text-align:right;cursor:pointer" onclick="sortDetail('adr')">ADR (USD) ▾</th>
+              <th style="text-align:right;cursor:pointer" onclick="sortDetail('m2')">ADR /m2</th>
+            </tr></thead>
+            <tbody id="detailTable">
+              <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: filtro + KPIs -->
+    <div style="display:flex;flex-direction:column;gap:10px;position:sticky;top:70px">
+
+      <!-- Filtro tipo de cancelación -->
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Tipo de Cancelación</div>
+        <div id="cancelFilter" style="display:flex;flex-direction:column;gap:4px">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="radio" name="cancel" value="all" checked onchange="applyFilter()" style="accent-color:var(--amber)"> Todos
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="radio" name="cancel" value="free_cancellation" onchange="applyFilter()" style="accent-color:var(--amber)"> free_cancellation
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="radio" name="cancel" value="non_refundable" onchange="applyFilter()" style="accent-color:var(--amber)"> non_refundable
+          </label>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Promedio — Tarifa</div>
+        <div style="font-size:26px;font-weight:600;color:var(--amber)" id="kC-avg">—</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Promedio — $/m2</div>
+        <div style="font-size:26px;font-weight:600;color:var(--amber)" id="kC-m2avg">—</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Precio Max</div>
+        <div style="font-size:26px;font-weight:600;color:var(--text)" id="kC-max">—</div>
+      </div>
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Record Count</div>
+        <div style="font-size:26px;font-weight:600;color:var(--text)" id="kC-count">—</div>
+      </div>
+
     </div>
   </div>
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════
 // DATA
@@ -520,25 +590,17 @@ function renderChart(labels,data){
 // GOOGLE SHEETS LOADERS
 // ══════════════════════════════════════════════════
 async function parseCSV(url){
-  // Proxy para evitar CORS con Google Sheets
   const proxy="https://corsproxy.io/?"+encodeURIComponent(url);
-  let res;
-  try{
-    res=await fetch(proxy);
-    if(!res.ok)throw new Error("proxy falló");
-  }catch(e){
-    // Fallback: intento directo
-    res=await fetch(url);
-  }
-  if(!res.ok)throw new Error("No se pudo acceder al Sheet");
-  const csv=await res.text();
-  const rows=csv.trim().split("\n").map(r=>{
-    const cells=[];let cur="",inq=false;
-    for(const ch of r){if(ch==='"'){inq=!inq}else if(ch===','&&!inq){cells.push(cur.trim());cur=""}else cur+=ch;}
-    cells.push(cur.trim());return cells;
+  return new Promise((resolve,reject)=>{
+    Papa.parse(proxy,{
+      download:true,
+      header:true,
+      skipEmptyLines:true,
+      transformHeader:h=>h.replace(/^\ufeff/,"").trim().toLowerCase(),
+      complete:r=>resolve(r.data),
+      error:e=>reject(new Error(e.message||"Error CSV"))
+    });
   });
-  const headers=rows[0].map(h=>h.replace(/"/g,"").toLowerCase().trim());
-  return rows.slice(1).map(row=>{const o={};headers.forEach((h,i)=>o[h]=row[i]||"");return o;});
 }
 
 function findCol(headers,candidates){return candidates.find(c=>headers.some(h=>h.includes(c)))||"";}
@@ -552,7 +614,7 @@ async function loadSheetA(url){
     // Filtrar solo filas de BoH
     const boh=data.filter(r=>{
       const h=(r["hotel"]||r["nombre hotel"]||"").toLowerCase();
-      return h.includes("boh")||h.includes("manila");
+      return h.includes("boh");
     });
     const rows=boh.length?boh:data; // fallback a todos si no encuentra BoH
     const mapped=rows.map(r=>({
@@ -625,30 +687,10 @@ async function loadSheetC(url){
     if(!data.length)throw new Error("Sin datos");
     window._priceData=data;
     localStorage.setItem("boh_url_c",url);
-
-    // KPIs BoH
-    const boh=data.filter(r=>{
-      const h=(r["nombre hotel"]||r["hotel"]||"").toLowerCase();
-      return h.includes("boh")||h.includes("manila boutique")||h.includes("boh manila");
-    });
-    const all=data.filter(r=>parseFloat(r["precio (usd)"])>0);
-    const bohPrices=boh.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
-    const allPrices=all.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
-    const bohAvg=bohPrices.length?(bohPrices.reduce((a,b)=>a+b,0)/bohPrices.length).toFixed(0):"-";
-    const mktAvg=allPrices.length?(allPrices.reduce((a,b)=>a+b,0)/allPrices.length).toFixed(0):"-";
-    const bohMin=bohPrices.length?Math.min(...bohPrices).toFixed(0):"-";
-    const bohMax=bohPrices.length?Math.max(...bohPrices).toFixed(0):"-";
-    const diff=bohAvg!=="-"&&mktAvg!=="-"?(((bohAvg-mktAvg)/mktAvg)*100).toFixed(1):"-";
-
-    document.getElementById("kC-avg").textContent="$"+bohAvg;
-    document.getElementById("kC-range").textContent="$"+bohMin+"–$"+bohMax;
-    document.getElementById("kC-mkt").textContent="$"+mktAvg;
-    document.getElementById("kC-diff").textContent=(diff>0?"+":"")+diff+"%";
-    document.getElementById("kC-diff").className="kpi-v "+(diff>0?"va":"vg");
-    document.getElementById("kC-rooms").textContent=boh.length;
-
-    // Tabla de precios por hotel
-    renderPriceTable(data);
+    // Fecha de actualización
+    const fechas=data.map(r=>r["fecha de actualizacion"]||r["fecha de actualización"]||"").filter(f=>f);
+    if(fechas.length)document.getElementById("kC-fecha").textContent=fechas[0];
+    applyFilter();
     document.getElementById("stC").innerHTML=`<span style="color:var(--amber)">${data.length} filas · guardado</span>`;
   }catch(e){
     document.getElementById("stC").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
@@ -656,53 +698,113 @@ async function loadSheetC(url){
   btn.disabled=false;btn.textContent="Actualizar";
 }
 
-function renderPriceTable(data){
-  // Agrupar por hotel — precio min de cada hotel
-  const hotels={};
-  data.forEach(r=>{
-    const h=r["nombre hotel"]||r["hotel"]||"";
-    const p=parseFloat(r["precio (usd)"])||0;
-    if(!h||!p)return;
-    if(!hotels[h]||p<hotels[h].min)hotels[h]={min:p,max:hotels[h]?Math.max(hotels[h].max,p):p,count:(hotels[h]?.count||0)+1};
-    if(hotels[h])hotels[h].max=Math.max(hotels[h].max,p);
-    if(hotels[h])hotels[h].count=(hotels[h].count||1);
+function applyFilter(){
+  const data=window._priceData||[];
+  if(!data.length)return;
+  const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
+  const filtered=cancelVal==="all"?data:data.filter(r=>{
+    const c=(r["tipo de cancelaci\u00f3n"]||r["tipo de cancelacion"]||r["cancelacion"]||"").toLowerCase();
+    return c===cancelVal||c.includes(cancelVal.replace("_",""));
   });
-  // Recalcular correctamente
+  renderKPIs(filtered);
+  renderHotelTable(filtered);
+  renderDetailTable(filtered,null);
+}
+
+function getCol(row,...names){
+  for(const n of names){
+    if(row[n]!==undefined&&row[n]!=="")return row[n];
+  }
+  return "";
+}
+
+function renderKPIs(data){
+  const prices=data.map(r=>parseFloat(getCol(r,"precio (usd)","precio","price"))||0).filter(p=>p>0);
+  const m2s=data.map(r=>parseFloat(getCol(r,"precio x m2","precio/m2","preciom2"))||0).filter(p=>p>0);
+  const avg=prices.length?(prices.reduce((a,b)=>a+b,0)/prices.length):0;
+  const m2avg=m2s.length?(m2s.reduce((a,b)=>a+b,0)/m2s.length):0;
+  const max=prices.length?Math.max(...prices):0;
+  document.getElementById("kC-avg").textContent=avg?"$"+avg.toFixed(2):"—";
+  document.getElementById("kC-m2avg").textContent=m2avg?"$"+m2avg.toFixed(2):"—";
+  document.getElementById("kC-max").textContent=max?"$"+max.toFixed(2):"—";
+  document.getElementById("kC-count").textContent=data.length;
+}
+
+let _hotelSort="adr";
+function sortHotel(col){_hotelSort=col;applyFilter();}
+
+function renderHotelTable(data){
   const grouped={};
   data.forEach(r=>{
-    const h=r["nombre hotel"]||r["hotel"]||"";
-    const p=parseFloat(r["precio (usd)"]||r["precio"]||r["price"])||0;
+    const h=getCol(r,"nombre hotel","hotel");
+    const p=parseFloat(getCol(r,"precio (usd)","precio"))||0;
+    const m=parseFloat(getCol(r,"precio x m2","precio/m2"))||0;
+    const rt=parseFloat(getCol(r,"rating"))||0;
     if(!h||!p)return;
-    if(!grouped[h])grouped[h]={min:p,max:p,sum:0,count:0,esBoh:h.toLowerCase().includes("boh")||h.toLowerCase().includes("boh manila")};
-    grouped[h].min=Math.min(grouped[h].min,p);
-    grouped[h].max=Math.max(grouped[h].max,p);
+    if(!grouped[h])grouped[h]={sum:0,m2sum:0,count:0,rating:rt,esBoh:h.toLowerCase().includes("boh")};
     grouped[h].sum+=p;
+    grouped[h].m2sum+=m;
     grouped[h].count++;
+    if(rt)grouped[h].rating=rt;
   });
-  const sorted=Object.entries(grouped).sort((a,b)=>a[1].min-b[1].min);
-  const allMins=sorted.map(([,v])=>v.min);
-  const globalMin=Math.min(...allMins);
-  const globalMax=Math.max(...allMins);
-
+  let entries=Object.entries(grouped).map(([name,v])=>({
+    name,
+    adr:v.sum/v.count,
+    m2:v.m2sum/v.count,
+    rating:v.rating,
+    esBoh:v.esBoh
+  }));
+  entries.sort((a,b)=>_hotelSort==="m2"?b.m2-a.m2:b.adr-a.adr);
   const tb=document.getElementById("priceTable");
-  tb.innerHTML="";
-  sorted.forEach(([name,v])=>{
-    const avg=(v.sum/v.count).toFixed(0);
-    const pct=((v.min-globalMin)/(globalMax-globalMin||1)*100).toFixed(0);
-    const cls=v.min<=globalMin*1.1?"price-low":v.min<=globalMin*1.4?"price-mid":"price-high";
-    tb.innerHTML+=`<tr class="${v.esBoh?"boh-row":""}">
-      <td style="font-weight:${v.esBoh?"600":"400"};font-size:12px">${v.esBoh?"★ ":""} ${name}</td>
-      <td><span class="price-pill ${cls}">$${v.min}</span></td>
-      <td><span class="price-pill">$${v.max}</span></td>
-      <td><span class="price-pill">$${avg}</span></td>
-      <td style="width:120px">
-        <div style="background:var(--bg4);border-radius:3px;height:5px;overflow:hidden">
-          <div style="height:5px;border-radius:3px;background:${v.esBoh?"var(--green)":"var(--blue)"};width:${Math.max(4,pct)}%"></div>
-        </div>
-      </td>
-      <td style="font-size:10px;color:var(--text3)">${v.count} hab.</td>
-    </tr>`;
+  tb.innerHTML=entries.map((e,i)=>`<tr class="${e.esBoh?"boh-row":""}" style="cursor:pointer" onclick="filterDetail('${e.name.replace(/'/g,"\\'")}')">
+    <td style="color:var(--text3);font-size:11px">${i+1}</td>
+    <td style="font-weight:${e.esBoh?"600":"400"}">${e.esBoh?"★ ":""}${e.name}</td>
+    <td style="text-align:right;font-family:var(--mono)">${e.rating||"—"}</td>
+    <td style="text-align:right;font-family:var(--mono);color:var(--amber)">$${e.adr.toFixed(2)}</td>
+    <td style="text-align:right;font-family:var(--mono)">$${e.m2.toFixed(2)}</td>
+  </tr>`).join("");
+  document.getElementById("thADR").textContent=(_hotelSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)");
+  document.getElementById("thM2").textContent=(_hotelSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom");
+}
+
+let _detailSort="adr",_detailHotel=null;
+function sortDetail(col){_detailSort=col;renderDetailTable(window._priceData||[],_detailHotel);}
+function filterDetail(hotel){
+  _detailHotel=hotel;
+  document.getElementById("detailHotelLabel").textContent=hotel;
+  renderDetailTable(window._priceData||[],hotel);
+}
+
+function renderDetailTable(data,hotel){
+  const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
+  let rows=cancelVal==="all"?data:data.filter(r=>{
+    const c=(r["tipo de cancelaci\u00f3n"]||r["tipo de cancelacion"]||"").toLowerCase();
+    return c===cancelVal||c.includes(cancelVal.replace("_",""));
   });
+  if(hotel)rows=rows.filter(r=>getCol(r,"nombre hotel","hotel")===hotel);
+  rows=rows.filter(r=>parseFloat(getCol(r,"precio (usd)","precio"))||0);
+  rows.sort((a,b)=>{
+    if(_detailSort==="m2")return (parseFloat(getCol(b,"precio x m2"))||0)-(parseFloat(getCol(a,"precio x m2"))||0);
+    return (parseFloat(getCol(b,"precio (usd)"))||0)-(parseFloat(getCol(a,"precio (usd)"))||0);
+  });
+  const tb=document.getElementById("detailTable");
+  tb.innerHTML=rows.slice(0,100).map((r,i)=>{
+    const adr=parseFloat(getCol(r,"precio (usd)","precio"))||0;
+    const m2=parseFloat(getCol(r,"precio x m2"))||0;
+    const area=getCol(r,"\u00e1rea (m2)","area (m2)","area");
+    const camas=getCol(r,"n\u00famero de camas","numero de camas","camas");
+    const tipo=getCol(r,"tipo de habitaci\u00f3n","tipo de habitacion","tipo habitacion");
+    const bed=getCol(r,"tama\u00f1o de cama","tamano de cama","cama");
+    return `<tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-size:11px">${tipo}</td>
+      <td style="text-align:right;font-family:var(--mono)">${area}</td>
+      <td style="text-align:right;font-family:var(--mono)">${camas}</td>
+      <td style="font-size:10px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${bed}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--amber)">$${adr.toFixed(2)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${m2?"$"+m2.toFixed(2):"—"}</td>
+    </tr>`;
+  }).join("");
 }
 
 function forgetC(){
