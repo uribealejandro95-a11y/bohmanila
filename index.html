@@ -821,12 +821,25 @@ initA();
 
 // Pre-cargar URL de precios
 const _priceUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv";
-if(!localStorage.getItem("boh_url_c")){
-  localStorage.setItem("boh_url_c",_priceUrl);
-}
+const _reviewUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv&gid=2028313205";
+
+// Precios
+if(!localStorage.getItem("boh_url_c")) localStorage.setItem("boh_url_c",_priceUrl);
 const _sc=localStorage.getItem("boh_url_c")||_priceUrl;
 document.getElementById("sheetC").value=_sc;
 loadSheetC(_sc);
+
+// Reseñas — carga automática
+if(!localStorage.getItem("boh_url_a")) localStorage.setItem("boh_url_a",_reviewUrl);
+const _sa=localStorage.getItem("boh_url_a")||_reviewUrl;
+document.getElementById("sheetA").value=_sa;
+loadSheetA(_sa);
+
+// Reseñas competidores — mismo sheet, misma data
+if(!localStorage.getItem("boh_url_b")) localStorage.setItem("boh_url_b",_reviewUrl);
+const _sb=localStorage.getItem("boh_url_b")||_reviewUrl;
+document.getElementById("sheetB").value=_sb;
+loadSheetB(_sb);
 </script>
 </body>
 </html>
