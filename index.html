@@ -306,23 +306,33 @@ function go(tab){
 // CSV PARSER (fetch text → PapaParse string)
 // ═══════════════════════════════════════════════════
 async function fetchCSV(url){
-  const proxy = "https://corsproxy.io/?" + encodeURIComponent(url);
-  let text;
-  // Try proxy first, then direct
-  for(const u of [proxy, url]){
+  const proxies = [
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
+    "https://corsproxy.io/?" + encodeURIComponent(url),
+    "https://thingproxy.freeboard.io/fetch/" + url,
+    url
+  ];
+  let lastErr = "";
+  for(const u of proxies){
     try{
       const r = await fetch(u);
-      if(r.ok){ text = await r.text(); break; }
-    }catch(e){}
+      if(!r.ok) continue;
+      const text = await r.text();
+      if(text.length < 50) continue;
+      // Verify it's CSV not HTML error page
+      if(text.trim().startsWith("<")) continue;
+      const result = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: h => h.replace(/^\ufeff/,"").replace(/\u00a0/g," ").trim().toLowerCase()
+      });
+      if(result.data.length) return result.data;
+    }catch(e){
+      lastErr = e.message;
+      console.warn("Proxy failed:", u, e.message);
+    }
   }
-  if(!text) throw new Error("No se pudo acceder al Sheet. Verifica que esté publicado como CSV.");
-  const result = Papa.parse(text, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: h => h.replace(/^\ufeff/,"").trim().toLowerCase()
-  });
-  if(!result.data.length) throw new Error("CSV vacío");
-  return result.data;
+  throw new Error("No se pudo cargar el Sheet. " + lastErr);
 }
 
 // ═══════════════════════════════════════════════════
@@ -553,33 +563,26 @@ async function loadC(){
   }
 }
 
+function parseNum(s){
+  // Handles "$145.27", "$3,830.00", "145.27", "6.92" etc.
+  return parseFloat(String(s||"").replace(/[$,\s]/g,"")) || 0;
+}
+
 function getPrice(row, keys){
-  // Try all known variants of the price column
-  const candidates = ["precio (usd)","precio(usd)","precio usd","precio","price","adr","tarifa"];
-  for(const c of candidates){
-    const k = keys.find(k2=>k2===c);
-    if(k && row[k] && parseFloat(row[k])>0) return parseFloat(row[k]);
-  }
-  // Fallback: find any numeric column that looks like a price
   for(const k of keys){
-    if(k.includes("precio")&&!k.includes("m2")&&!k.includes("x")){
-      const v = parseFloat(row[k]);
-      if(v>0) return v;
+    if(k.includes("precio") && !k.includes("m2") && !k.includes("x")){
+      const v = parseNum(row[k]);
+      if(v > 0) return v;
     }
   }
   return 0;
 }
 
 function getM2(row, keys){
-  const candidates = ["precio x m2","precio/m2","precio_m2","preciom2","precio x m²"];
-  for(const c of candidates){
-    const k = keys.find(k2=>k2===c);
-    if(k && row[k] && parseFloat(row[k])>0) return parseFloat(row[k]);
-  }
   for(const k of keys){
-    if(k.includes("precio")&&(k.includes("m2")||k.includes("x"))){
-      const v = parseFloat(row[k]);
-      if(v>0) return v;
+    if(k.includes("precio") && (k.includes("m2") || k.includes("x"))){
+      const v = parseNum(row[k]);
+      if(v > 0) return v;
     }
   }
   return 0;
