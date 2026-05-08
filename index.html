@@ -346,6 +346,8 @@ pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;paddi
     <div class="conn-st" id="stC"><span>—</span></div>
   </div>
 
+  <div id="priceDebug" style="font-size:10px;font-family:var(--mono);color:var(--amber);padding:6px 10px;background:var(--bg3);border-radius:6px;word-break:break-all"></div>
+
   <!-- Header tipo Looker -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
     <div>
@@ -599,16 +601,27 @@ function renderChart(labels,data){
 // ══════════════════════════════════════════════════
 async function parseCSV(url){
   const proxy="https://corsproxy.io/?"+encodeURIComponent(url);
-  return new Promise((resolve,reject)=>{
-    Papa.parse(proxy,{
-      download:true,
-      header:true,
-      skipEmptyLines:true,
-      transformHeader:h=>h.replace(/^\ufeff/,"").trim().toLowerCase(),
-      complete:r=>resolve(r.data),
-      error:e=>reject(new Error(e.message||"Error CSV"))
-    });
+  let text;
+  try{
+    const r=await fetch(proxy);
+    if(!r.ok)throw new Error();
+    text=await r.text();
+  }catch(e){
+    try{
+      const r=await fetch(url);
+      if(!r.ok)throw new Error();
+      text=await r.text();
+    }catch(e2){
+      throw new Error("No se pudo acceder al Sheet — verifica que esté publicado como CSV");
+    }
+  }
+  const result=Papa.parse(text,{
+    header:true,
+    skipEmptyLines:true,
+    transformHeader:h=>h.replace(/^\ufeff/,"").trim().toLowerCase()
   });
+  if(!result.data.length)throw new Error("CSV vacío o sin datos");
+  return result.data;
 }
 
 function findCol(headers,candidates){return candidates.find(c=>headers.some(h=>h.includes(c)))||"";}
@@ -706,6 +719,10 @@ async function loadSheetC(url){
     const fechas=data.map(r=>r["fecha de actualizacion"]||r["fecha de actualización"]||"").filter(f=>f);
     if(fechas.length)document.getElementById("kC-fecha").textContent=fechas[0];
     applyFilter();
+    // Debug — muestra columnas detectadas
+    const cols=detectCols(data);
+    const dbg=document.getElementById("priceDebug");
+    if(dbg)dbg.textContent="Columnas detectadas → hotel:"+cols.hotel+" | precio:"+cols.precio+" | m2:"+cols.m2+" | room:"+cols.room+" | Muestra precio fila1: "+JSON.stringify(data[0]?.[cols.precio]);
     // Poblar KPIs de precios en pestaña Mi hotel
     updateBohPriceKPIs(data);
     document.getElementById("stC").innerHTML=`<span style="color:var(--amber)">${data.length} filas · guardado</span>`;
@@ -713,6 +730,33 @@ async function loadSheetC(url){
     document.getElementById("stC").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
   }
   btn.disabled=false;btn.textContent="Actualizar";
+}
+
+function detectCols(data){
+  if(!data||!data.length)return {};
+  const keys=Object.keys(data[0]);
+  console.log("CSV keys:",keys);
+  const exact=n=>keys.find(k=>k===n)||"";
+  const has=(...t)=>keys.find(k=>t.every(s=>k.includes(s)))||"";
+  return {
+    hotel:  exact("nombre hotel")||has("nombre","hotel")||has("hotel"),
+    precio: exact("precio (usd)")||
+            keys.find(k=>k.includes("precio")&&k.includes("usd"))||
+            keys.find(k=>k.includes("precio")&&!k.includes("m2")&&!k.includes("x"))||"",
+    m2:     exact("precio x m2")||has("precio","m2"),
+    rating: exact("rating")||has("rating"),
+    room:   exact("tipo de habitación")||exact("tipo de habitacion")||has("habitaci"),
+    area:   exact("área (m2)")||exact("area (m2)")||keys.find(k=>k.includes("rea")&&k.includes("m2"))||"",
+    beds:   exact("número de camas")||exact("numero de camas")||has("camas"),
+    bedsize:exact("tamaño de cama")||exact("tamano de cama")||has("cama"),
+    cancel: exact("tipo de cancelación")||exact("tipo de cancelacion")||has("cancelaci"),
+    fecha:  exact("fecha de actualizacion")||exact("fecha de actualización")||has("fecha","actual")
+  };
+}
+
+function getVal(row,key){
+  if(!key||!row)return "";
+  return (row[key]||"").toString().trim();
 }
 
 function applyFilter(){
@@ -833,7 +877,7 @@ function updateBohPriceKPIs(data){
   diffEl.className="kpi-v "+(diff>0?"vr":diff<0?"vg":"va"); // rojo si más caro, verde si más barato
   document.getElementById("kA-rank").textContent=rank?"#"+rank+" / "+ranked.length:"—";
 }
-
+function forgetC(){
   localStorage.removeItem("boh_url_c");
   document.getElementById("sheetC").value="";
   document.getElementById("stC").innerHTML="<span>URL eliminada</span>";
