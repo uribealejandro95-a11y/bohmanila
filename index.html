@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoH Manila — Review Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0f12;--bg2:#141619;--bg3:#1c1f24;--bg4:#242830;--bg5:#2e333d;
+  --border:#272b33;--border2:#363c48;
+  --text:#e8eaf0;--text2:#8b909e;--text3:#50566a;
+  --green:#2dd896;--gdim:#0c2318;
+  --amber:#f5a623;--adim:#2a1d08;
+  --red:#f05252;--rdim:#280e0e;
+  --blue:#4a9eff;--bdim:#0d1f38;
+  --purple:#a78bfa;--pdim:#1c1535;
+  --env-a:#2dd896;--env-b:#a78bfa;--env-c:#f5a623;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh}
+
+/* ── Header ── */
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:stretch;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;padding:14px 0;font-size:13px;font-weight:600}
+.logo-dim{color:var(--text3);font-weight:400}
+
+/* Environment switcher */
+.env-switch{display:flex;align-items:stretch}
+.env-tab{display:flex;align-items:center;gap:8px;padding:0 20px;cursor:pointer;border-bottom:2px solid transparent;font-size:12px;font-weight:500;color:var(--text3);transition:all .2s;user-select:none}
+.env-tab:hover{color:var(--text2)}
+.env-tab.on-a{color:var(--env-a);border-bottom-color:var(--env-a)}
+.env-tab.on-b{color:var(--env-b);border-bottom-color:var(--env-b)}
+.env-tab.on-c{color:var(--env-c);border-bottom-color:var(--env-c)}
+.env-dot{width:7px;height:7px;border-radius:50%}
+.ed-a{background:var(--env-a)}.ed-b{background:var(--env-b)}.ed-c{background:var(--env-c)}
+
+/* Price table */
+.price-table{width:100%;border-collapse:collapse;font-size:11px}
+.price-table th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:0 10px 8px;text-align:left;font-weight:500;white-space:nowrap}
+.price-table td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:middle}
+.price-table tr:hover td{background:var(--bg3)}
+.price-table tr.boh-row td{background:var(--gdim)}
+.price-pill{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;background:var(--bg4)}
+.price-low{color:var(--green)}.price-mid{color:var(--amber)}.price-high{color:var(--red)}
+
+.header-right{display:flex;align-items:center;gap:8px;padding:14px 0}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2)}
+.chip-live{display:flex;align-items:center;gap:5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── Environments ── */
+.env{display:none;padding:22px 28px;flex-direction:column;gap:16px}
+.env.active{display:flex}
+
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.ct{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.kpi-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.kpi-v{font-size:26px;font-weight:600;line-height:1;margin-bottom:3px}
+.kpi-s{font-size:10px;color:var(--text2)}
+.vg{color:var(--green)}.va{color:var(--amber)}.vr{color:var(--red)}.vb{color:var(--blue)}.vp{color:var(--purple)}
+
+/* ── Layout ── */
+.row2{display:grid;grid-template-columns:1.8fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:14px}
+.chart-wrap{position:relative}
+
+/* ── Category bars ── */
+.cat-item{margin-bottom:9px}.cat-item:last-child{margin-bottom:0}
+.cat-meta{display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px}
+.cat-meta span:first-child{color:var(--text2)}
+.bar-bg{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.bar-fill{height:5px;border-radius:3px;transition:width .7s ease}
+
+/* ── Issues ── */
+.issue{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
+.issue:last-child{border-bottom:none;padding-bottom:0}
+.issue:first-child{padding-top:0}
+.idot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.id-u{background:var(--red)}.id-h{background:var(--amber)}.id-l{background:var(--blue)}
+.ititle{font-size:12px;font-weight:500;margin-bottom:2px}
+.idesc{font-size:11px;color:var(--text2);line-height:1.5}
+.ibadge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;flex-shrink:0;letter-spacing:.04em}
+.ib-u{background:var(--rdim);color:var(--red)}.ib-h{background:var(--adim);color:var(--amber)}.ib-l{background:var(--bdim);color:var(--blue)}
+
+/* ── Review cards ── */
+.rev{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.rev:last-child{margin-bottom:0}
+.rev-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.avatar{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.rname{font-size:12px;font-weight:500}.rmeta{font-size:10px;color:var(--text2)}
+.rscore{font-size:18px;font-weight:600}
+.rtext{font-size:11px;line-height:1.55;margin-bottom:5px}
+.tags{display:flex;flex-wrap:wrap;gap:3px}
+.tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.tp{background:var(--gdim);color:var(--green)}.tn{background:var(--rdim);color:var(--red)}.tm{background:var(--bg4);color:var(--text2)}
+
+/* ── AI panel ── */
+.ai-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.ai-title{font-size:13px;font-weight:500;margin-bottom:2px}
+.ai-sub{font-size:11px;color:var(--text2);margin-bottom:12px}
+.ai-badge{background:linear-gradient(135deg,var(--gdim),var(--bdim));border:1px solid rgba(45,216,150,.2);border-radius:6px;padding:3px 9px;font-size:10px;color:var(--green);font-weight:600;letter-spacing:.05em}
+textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--font);font-size:12px;line-height:1.6;resize:vertical;min-height:68px;outline:none;transition:border-color .2s}
+textarea:focus{border-color:var(--green)}
+textarea::placeholder{color:var(--text3)}
+.analyze-btn{background:var(--env-a);color:#061210;border:none;border-radius:7px;padding:8px 15px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:opacity .2s;margin-top:8px}
+.analyze-btn.b-purple{background:var(--env-b);color:#100c20}
+.analyze-btn:hover{opacity:.85}
+.analyze-btn:disabled{opacity:.35;cursor:default}
+.spin{width:11px;height:11px;border:2px solid rgba(6,18,16,.3);border-top-color:#061210;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spin-p{border:2px solid rgba(16,12,32,.3);border-top-color:#100c20}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-result{margin-top:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;display:none}
+.ai-result.show{display:block}
+.action-box{background:var(--bg4);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:9px 11px;font-size:11px;margin-top:8px;line-height:1.6}
+.action-label{font-size:9px;color:var(--amber);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
+
+/* ── ENV B (Competitor) ── */
+.hotel-select{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.hbtn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.hbtn:hover{border-color:var(--border2);color:var(--text)}
+.hbtn.sel{background:var(--pdim);border-color:var(--purple);color:var(--purple)}
+
+.lesson{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.lesson:last-child{margin-bottom:0}
+.lesson-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.lesson-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.li-red{background:var(--rdim)}.li-amber{background:var(--adim)}.li-green{background:var(--gdim)}
+.lesson-hotel{font-size:10px;color:var(--text3);margin-bottom:3px}
+.lesson-title{font-size:12px;font-weight:500;margin-bottom:3px}
+.lesson-desc{font-size:11px;color:var(--text2);line-height:1.55}
+.lesson-apply{font-size:11px;color:var(--green);margin-top:5px;line-height:1.5}
+.lesson-apply::before{content:"→ BoH: ";font-weight:500}
+
+.empty{color:var(--text3);font-size:12px;text-align:center;padding:28px;font-style:italic;line-height:1.7}
+
+/* ── Sheets connector strip ── */
+.sheet-strip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.sheet-strip input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:var(--mono);font-size:10px;outline:none;transition:border-color .2s}
+.sheet-strip input:focus{border-color:var(--purple)}
+.sheet-strip input::placeholder{color:var(--text3)}
+.sheet-btn{border:none;border-radius:6px;padding:6px 12px;font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+.sb-green{background:var(--green);color:#061210}
+.sb-purple{background:var(--purple);color:#100c20}
+.sheet-btn:hover{opacity:.85}
+.sheet-btn:disabled{opacity:.35;cursor:default}
+.conn-st{font-size:10px;white-space:nowrap;display:flex;align-items:center;gap:4px;color:var(--text3)}
+
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--text2);overflow-x:auto;white-space:pre-wrap;line-height:1.6;margin-top:6px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">BoH Manila <span class="logo-dim">&nbsp;/&nbsp;Review Intelligence</span></div>
+
+  <div class="env-switch">
+    <div class="env-tab on-a" id="tab-a" onclick="switchEnv('a')">
+      <div class="env-dot ed-a"></div>Mi hotel
+    </div>
+    <div class="env-tab" id="tab-b" onclick="switchEnv('b')">
+      <div class="env-dot ed-b"></div>Inteligencia competitiva
+    </div>
+    <div class="env-tab" id="tab-c" onclick="switchEnv('c')">
+      <div class="env-dot ed-c"></div>Precios
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="chip chip-live"><div class="live-dot"></div>Booking.com</div>
+    <div class="chip" id="syncBadge">May 2026 · 5 reseñas</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ENV A — MI HOTEL
+═════════════════════════════════════════════════ -->
+<div class="env active" id="env-a">
+
+  <!-- Sheets connector -->
+  <div class="sheet-strip">
+    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Google Sheets BoH
+    </span>
+    <input id="sheetA" placeholder="Pega URL CSV de tu Sheet (Archivo → Publicar en la web → CSV)"/>
+    <button class="sheet-btn sb-green" id="btnSheetA" onclick="loadSheetA()">Cargar</button>
+    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetA()" title="Olvidar URL guardada">✕</button>
+    <div class="conn-st" id="stA"><span>—</span></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-l">Score general</div><div class="kpi-v vg" id="kA-score">9.4</div><div class="kpi-s">Mayo 2026</div></div>
+    <div class="kpi"><div class="kpi-l">Ubicación</div><div class="kpi-v vg">10.0</div><div class="kpi-s">Categoría top</div></div>
+    <div class="kpi"><div class="kpi-l">Personal</div><div class="kpi-v va" id="kA-staff">9.0</div><div class="kpi-s">Oportunidad mejora</div></div>
+    <div class="kpi"><div class="kpi-l">Problemas activos</div><div class="kpi-v vr">3</div><div class="kpi-s">Sin resolver</div></div>
+    <div class="kpi"><div class="kpi-l">Reseñas este mes</div><div class="kpi-v vb" id="kA-count">5</div><div class="kpi-s">Booking.com</div></div>
+  </div>
+
+  <!-- Chart + Categories -->
+  <div class="row2">
+    <div class="card">
+      <div class="ct">Evolución del score <span style="color:var(--text3)">BoH Manila · Mayo 2026</span></div>
+      <div class="chart-wrap" style="height:185px"><canvas id="trendChart" role="img" aria-label="Trend BoH"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">Por categoría</div>
+      <div id="catBars"></div>
+    </div>
+  </div>
+
+  <!-- Issues + Reviews -->
+  <div class="row3">
+    <div class="card">
+      <div class="ct">Problemas detectados <span style="color:var(--text3)">este mes</span></div>
+      <div id="issuesList"></div>
+    </div>
+    <div class="card" style="overflow-y:auto;max-height:380px">
+      <div class="ct">Últimas reseñas</div>
+      <div id="reviewsA"></div>
+    </div>
+    <div class="ai-panel" style="background:var(--bg2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div><div class="ai-title">Analizar nueva reseña</div><div class="ai-sub">Booking · Google · TripAdvisor</div></div>
+        <div class="ai-badge">✦ CLAUDE</div>
+      </div>
+      <textarea id="inputA" placeholder="Pega aquí el texto de la reseña de BoH Manila..."></textarea>
+      <button class="analyze-btn" id="btnA" onclick="analyzeA()">
+        <div class="spin" id="spinA"></div><span id="btxtA">Analizar reseña</span>
+      </button>
+      <div class="ai-result" id="resA"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ENV B — INTELIGENCIA COMPETITIVA
+═════════════════════════════════════════════════ -->
+<div class="env" id="env-b">
+
+  <!-- Sheets connector competidores -->
+  <div class="sheet-strip">
+    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Sheets competidores (Apify output)
+    </span>
+    <input id="sheetB" placeholder="URL CSV del scraper de reviews de tus 17 competidores"/>
+    <button class="sheet-btn sb-purple" id="btnSheetB" onclick="loadSheetB()">Cargar</button>
+    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetB()" title="Olvidar URL guardada">✕</button>
+    <div class="conn-st" id="stB"><span>—</span></div>
+  </div>
+
+  <!-- Hotel selector -->
+  <div class="card">
+    <div class="ct">Selecciona un competidor para ver sus reseñas</div>
+    <div class="hotel-select" id="hotelSelect">
+      <div class="hbtn sel" onclick="selectHotel(this,'Click Clack')">Click Clack</div>
+      <div class="hbtn" onclick="selectHotel(this,'Wake')">Wake</div>
+      <div class="hbtn" onclick="selectHotel(this,'Art Hotel')">Art Hotel</div>
+      <div class="hbtn" onclick="selectHotel(this,'Landmark')">Landmark</div>
+      <div class="hbtn" onclick="selectHotel(this,'23 Hotel')">23 Hotel</div>
+      <div class="hbtn" onclick="selectHotel(this,'El Cielo')">El Cielo</div>
+      <div class="hbtn" onclick="selectHotel(this,'Manila Boutique')">Manila Boutique</div>
+      <div class="hbtn" onclick="selectHotel(this,'Somos Bold')">Somos Bold</div>
+      <div class="hbtn" onclick="selectHotel(this,'The Somos')">The Somos</div>
+      <div class="hbtn" onclick="selectHotel(this,'Wellcomme')">Wellcomme</div>
+      <div class="hbtn" onclick="selectHotel(this,'Be Mate')">Be Mate</div>
+      <div class="hbtn" onclick="selectHotel(this,'Selvario 36')">Selvario 36</div>
+      <div class="hbtn" onclick="selectHotel(this,'Hashtag 98')">Hashtag 98</div>
+      <div class="hbtn" onclick="selectHotel(this,'Heiss')">Heiss</div>
+      <div class="hbtn" onclick="selectHotel(this,'York Luxury')">York Luxury</div>
+      <div class="hbtn" onclick="selectHotel(this,'Marquee')">Marquee</div>
+      <div class="hbtn" onclick="selectHotel(this,'Villaz')">Villaz</div>
+    </div>
+  </div>
+
+  <!-- Competitor reviews + AI lessons -->
+  <div class="row2">
+    <div class="card" style="overflow-y:auto;max-height:420px">
+      <div class="ct" id="compCardTitle">Reseñas · Click Clack <span style="color:var(--text3)">Carga tu Sheet para ver datos reales</span></div>
+      <div id="reviewsB">
+        <div class="empty">Conecta el Google Sheet con el output del<br>Apify Reviews Scraper para ver las reseñas<br>de cada competidor aquí.</div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow-y:auto;max-height:420px">
+      <div class="ct">Lecciones aplicables a BoH</div>
+      <div id="lessonsB">
+        <div class="empty">Pega abajo una reseña negativa de un<br>competidor y Claude extrae qué puedes<br>aprender y cómo aplicarlo en BoH.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI: Extraer lección de reseña de competidor -->
+  <div class="ai-panel" style="background:var(--bg2);border-color:rgba(167,139,250,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div class="ai-title">Extraer lección de reseña de competidor</div>
+        <div class="ai-sub">Pega una reseña negativa (o mixta) de cualquier competidor — Claude identifica el error y cómo BoH ya lo resuelve o debe resolverlo</div>
+      </div>
+      <div class="ai-badge" style="border-color:rgba(167,139,250,.3);color:var(--purple)">✦ CLAUDE</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <input type="text" id="compNameInput" placeholder="Nombre del hotel competidor" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;width:200px;flex-shrink:0;transition:border-color .2s" onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'">
+      <textarea id="inputB" placeholder="Pega aquí la reseña del competidor..." style="min-height:56px"></textarea>
+    </div>
+    <button class="analyze-btn b-purple" id="btnB" onclick="analyzeB()">
+      <div class="spin spin-p" id="spinB"></div><span id="btxtB">Extraer lección para BoH</span>
+    </button>
+    <div class="ai-result" id="resB"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════
+     ENV C — PRECIOS
+═════════════════════════════════════════════════ -->
+<div class="env" id="env-c">
+
+  <div class="sheet-strip">
+    <span style="font-size:11px;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      Sheets precios (Apify)
+    </span>
+    <input id="sheetC" placeholder="URL CSV del sheet de precios"/>
+    <button class="sheet-btn" style="background:var(--amber);color:#1a0f00;font-weight:600;border:none;border-radius:7px;padding:6px 12px;font-size:11px;cursor:pointer" id="btnSheetC" onclick="loadSheetC()">Actualizar</button>
+    <button class="sheet-btn" style="background:var(--bg4);color:var(--text3);border:1px solid var(--border)" onclick="forgetC()" title="Olvidar URL">✕</button>
+    <div class="conn-st" id="stC"><span>—</span></div>
+  </div>
+
+  <!-- KPIs precios -->
+  <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi"><div class="kpi-l">Precio promedio BoH</div><div class="kpi-v va" id="kC-avg">—</div><div class="kpi-s">USD / noche</div></div>
+    <div class="kpi"><div class="kpi-l">Rango BoH</div><div class="kpi-v vb" id="kC-range">—</div><div class="kpi-s">Min – Max</div></div>
+    <div class="kpi"><div class="kpi-l">Promedio mercado</div><div class="kpi-v vp" id="kC-mkt">—</div><div class="kpi-s">18 hoteles</div></div>
+    <div class="kpi"><div class="kpi-l">BoH vs mercado</div><div class="kpi-v va" id="kC-diff">—</div><div class="kpi-s">diferencia %</div></div>
+    <div class="kpi"><div class="kpi-l">Habitaciones BoH</div><div class="kpi-v vg" id="kC-rooms">—</div><div class="kpi-s">opciones activas</div></div>
+  </div>
+
+  <!-- Tabla benchmark de precios -->
+  <div class="card">
+    <div class="ct">Benchmark de precios por hotel <span style="color:var(--text3);font-size:10px">★ BoH Manila resaltado</span></div>
+    <div style="overflow-x:auto">
+      <table class="price-table">
+        <thead>
+          <tr>
+            <th>Hotel</th>
+            <th>Precio mín</th>
+            <th>Precio máx</th>
+            <th>Promedio</th>
+            <th>Posición</th>
+            <th>Hab.</th>
+          </tr>
+        </thead>
+        <tbody id="priceTable">
+          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px;font-style:italic">Cargando datos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const seedReviews = [
+  {reviewer:"Joao",country:"FR",date:"1 may",score:9.0,
+   pos:"Ubicación perfecta, limpio, bien decorado, desayuno bueno, personal amable",
+   neg:"Puerta cierra a las 10pm — hay que esperar o llamar por WhatsApp",
+   tags:[{t:"Ubicación",p:1},{t:"Limpieza",p:1},{t:"Desayuno",p:1},{t:"Puerta 10pm",p:0}]},
+  {reviewer:"Armin",country:"AU",date:"4 may",score:8.0,
+   pos:"Diseño moderno, cama enorme, café recién molido",
+   neg:"Recepción oculta, tarjeta acceso falla (problema persistente), sin inglés, horario desayuno tardío",
+   tags:[{t:"Diseño",p:1},{t:"Cama",p:1},{t:"Key card",p:0},{t:"Sin inglés",p:0},{t:"Recepción",p:0}]},
+  {reviewer:"Cassie",country:"US",date:"5 may",score:10,
+   pos:"Personal excepcional, jacuzzi en terraza, limpio, barrio Manila, muy seguro",
+   neg:"Café no recomendable, piscina en construcción",
+   tags:[{t:"Personal ★",p:1},{t:"Jacuzzi",p:1},{t:"Manila",p:1},{t:"Café",p:0}]},
+  {reviewer:"Haroñ Rafael",country:"CO",date:"8 may",score:10,
+   pos:"El concepto de las habitaciones — Excelente",neg:"",
+   tags:[{t:"Concepto",p:1},{t:"Perfecto",p:1}]},
+  {reviewer:"Rafael",country:"CO",date:"8 may",score:10,
+   pos:"La atención 100% Excelente",neg:"",
+   tags:[{t:"Atención",p:1}]}
+];
+
+const issues=[
+  {title:"Puerta principal cierra a las 10pm",desc:"Fricción directa — huéspedes esperan o llaman por WhatsApp",p:"urgent"},
+  {title:"Recepción oculta sin señalización",desc:"Difícil de encontrar cuando la cafetería está desatendida",p:"urgent"},
+  {title:"Tarjeta de acceso con fallas",desc:"Problema ya reportado antes y sin resolver aún",p:"urgent"},
+  {title:"Sin personal que hable inglés",desc:"Impacta a huéspedes internacionales",p:"high"},
+  {title:"Café de baja calidad",desc:"Mencionado negativamente por 2 huéspedes distintos",p:"high"},
+];
+
+const cats=[
+  {name:"Ubicación",avg:10,c:"#2dd896"},{name:"Limpieza",avg:10,c:"#2dd896"},
+  {name:"Confort",avg:10,c:"#2dd896"},{name:"Personal",avg:9.0,c:"#f5a623"},
+  {name:"Instalaciones",avg:9.0,c:"#f5a623"},{name:"Calidad/precio",avg:9.1,c:"#f5a623"},
+];
+
+const avatarBg=["#0c2318","#0d1f38","#2a1d08","#280e0e","#1c1535"];
+const avatarClr=["#2dd896","#4a9eff","#f5a623","#f05252","#a78bfa"];
+
+// ══════════════════════════════════════════════════
+// ENV SWITCH
+// ══════════════════════════════════════════════════
+function switchEnv(env){
+  document.getElementById("env-a").classList.toggle("active",env==="a");
+  document.getElementById("env-b").classList.toggle("active",env==="b");
+  document.getElementById("env-c").classList.toggle("active",env==="c");
+  document.getElementById("tab-a").className="env-tab"+(env==="a"?" on-a":"");
+  document.getElementById("tab-b").className="env-tab"+(env==="b"?" on-b":"");
+  document.getElementById("tab-c").className="env-tab"+(env==="c"?" on-c":"");
+}
+
+// ══════════════════════════════════════════════════
+// RENDER HELPERS
+// ══════════════════════════════════════════════════
+function scoreColor(s){return s>=9?"#2dd896":s>=7?"#f5a623":"#f05252"}
+
+function revHTML(r,i){
+  const init=(r.reviewer||r.name||"?").split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
+  const sc=scoreColor(r.score);
+  return `<div class="rev">
+    <div class="rev-header">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="avatar" style="background:${avatarBg[i%5]};color:${avatarClr[i%5]}">${init}</div>
+        <div><div class="rname">${r.reviewer||r.name}</div><div class="rmeta">${r.country||""} · ${r.date}</div></div>
+      </div>
+      <div class="rscore" style="color:${sc}">${r.score}</div>
+    </div>
+    ${r.pos?`<div class="rtext" style="color:var(--text2)">✓ ${r.pos}</div>`:""}
+    ${r.neg?`<div class="rtext" style="color:var(--red);opacity:.85">✕ ${r.neg}</div>`:""}
+    <div class="tags">${(r.tags||[]).map(t=>`<span class="tag ${t.p?"tp":"tn"}">${t.t}</span>`).join("")}</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// INIT — ENV A
+// ══════════════════════════════════════════════════
+// INIT — auto-load desde localStorage
+// ══════════════════════════════════════════════════
+function initA(){
+  const rc=document.getElementById("reviewsA");
+  rc.innerHTML=seedReviews.map((r,i)=>revHTML(r,i)).join("");
+  const il=document.getElementById("issuesList");
+  il.innerHTML=issues.map(issue=>{
+    const dc=issue.p==="urgent"?"id-u":"id-h";
+    const bc=issue.p==="urgent"?"ib-u":"ib-h";
+    const bl=issue.p==="urgent"?"URGENTE":"PRIORITARIO";
+    return `<div class="issue"><div class="idot ${dc}"></div>
+      <div style="flex:1"><div class="ititle">${issue.title}</div><div class="idesc">${issue.desc}</div></div>
+      <span class="ibadge ${bc}">${bl}</span></div>`;
+  }).join("");
+  const cb=document.getElementById("catBars");
+  cb.innerHTML=cats.map(c=>`<div class="cat-item">
+    <div class="cat-meta"><span>${c.name}</span><span style="color:${c.c}">${c.avg}</span></div>
+    <div class="bar-bg"><div class="bar-fill" style="width:${c.avg*10}%;background:${c.c}"></div></div>
+  </div>`).join("");
+  renderChart(["1 may","4 may","5 may","8 may (1)","8 may (2)"],[9,8,10,10,10]);
+
+  // ── Auto-load URLs guardadas ──
+  const savedA=localStorage.getItem("boh_url_a");
+  if(savedA){
+    document.getElementById("sheetA").value=savedA;
+    document.getElementById("btnSheetA").textContent="Actualizando...";
+    const lastSync=localStorage.getItem("boh_sync_a");
+    if(lastSync){
+      const d=new Date(lastSync);
+      document.getElementById("stA").innerHTML=`<span style="color:var(--text3)">Última sync: ${d.toLocaleDateString("es-CO",{day:"2-digit",month:"short"})} ${d.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"})}</span>`;
+    }
+    loadSheetA(savedA);
+  }
+  const savedB=localStorage.getItem("boh_url_b");
+  if(savedB){
+    document.getElementById("sheetB").value=savedB;
+    document.getElementById("btnSheetB").textContent="Actualizando...";
+    loadSheetB(savedB);
+  }
+
+  // ── Auto-refresh cada 30 minutos ──
+  setInterval(()=>{
+    const urlA=localStorage.getItem("boh_url_a");
+    const urlB=localStorage.getItem("boh_url_b");
+    if(urlA)loadSheetA(urlA);
+    if(urlB)loadSheetB(urlB);
+  }, 30*60*1000);
+}
+
+function renderChart(labels,data){
+  const old=Chart.getChart("trendChart");if(old)old.destroy();
+  new Chart(document.getElementById("trendChart").getContext("2d"),{
+    type:"line",
+    data:{labels,datasets:[{label:"Score",data,
+      borderColor:"#2dd896",backgroundColor:"rgba(45,216,150,.06)",
+      borderWidth:2,pointBackgroundColor:"#2dd896",pointRadius:4,tension:.4,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:"#1c1f24",borderColor:"#272b33",borderWidth:1,
+        titleColor:"#8b909e",bodyColor:"#e8eaf0"}},
+      scales:{
+        x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10,family:"DM Sans"}}},
+        y:{min:5,max:10,grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10,family:"DM Sans"},stepSize:1}}
+      }}
+  });
+}
+
+// ══════════════════════════════════════════════════
+// GOOGLE SHEETS LOADERS
+// ══════════════════════════════════════════════════
+async function parseCSV(url){
+  // Proxy para evitar CORS con Google Sheets
+  const proxy="https://corsproxy.io/?"+encodeURIComponent(url);
+  let res;
+  try{
+    res=await fetch(proxy);
+    if(!res.ok)throw new Error("proxy falló");
+  }catch(e){
+    // Fallback: intento directo
+    res=await fetch(url);
+  }
+  if(!res.ok)throw new Error("No se pudo acceder al Sheet");
+  const csv=await res.text();
+  const rows=csv.trim().split("\n").map(r=>{
+    const cells=[];let cur="",inq=false;
+    for(const ch of r){if(ch==='"'){inq=!inq}else if(ch===','&&!inq){cells.push(cur.trim());cur=""}else cur+=ch;}
+    cells.push(cur.trim());return cells;
+  });
+  const headers=rows[0].map(h=>h.replace(/"/g,"").toLowerCase().trim());
+  return rows.slice(1).map(row=>{const o={};headers.forEach((h,i)=>o[h]=row[i]||"");return o;});
+}
+
+function findCol(headers,candidates){return candidates.find(c=>headers.some(h=>h.includes(c)))||"";}
+
+async function loadSheetA(url){
+  url=url||document.getElementById("sheetA").value.trim();
+  if(!url)return;
+  const btn=document.getElementById("btnSheetA");btn.disabled=true;btn.textContent="Cargando...";
+  try{
+    const data=await parseCSV(url);
+    const keys=Object.keys(data[0]||{});
+    const nameC=findCol(keys,["reviewer","guest","huesped","nombre"]);
+    const dateC=findCol(keys,["date","fecha"]);
+    const scoreC=findCol(keys,["score","rating","puntuacion","nota"]);
+    const posC=findCol(keys,["pos","positive","bueno","liked"]);
+    const negC=findCol(keys,["neg","negative","malo","disliked"]);
+    const mapped=data.map(r=>({
+      reviewer:r[nameC]||"Anónimo",country:r["country"]||r["pais"]||"",
+      date:r[dateC]||"",score:parseFloat(r[scoreC])||8,
+      pos:r[posC]||"",neg:r[negC]||"",tags:[]
+    }));
+    document.getElementById("reviewsA").innerHTML=mapped.map((r,i)=>revHTML(r,i)).join("");
+    const avg=(mapped.reduce((a,r)=>a+r.score,0)/mapped.length).toFixed(1);
+    document.getElementById("kA-score").textContent=avg;
+    document.getElementById("kA-count").textContent=mapped.length;
+    const now=new Date();
+    const timeStr=now.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+    const dateStr=now.toLocaleDateString("es-CO",{day:"2-digit",month:"short"});
+    document.getElementById("syncBadge").textContent="✓ "+dateStr+" "+timeStr;
+    localStorage.setItem("boh_url_a",url);
+    localStorage.setItem("boh_sync_a",now.toISOString());
+    const sorted=[...mapped].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    renderChart(sorted.map(r=>r.date),sorted.map(r=>r.score));
+    document.getElementById("stA").innerHTML=`<div class="live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite"></div><span style="color:var(--green)">${mapped.length} reseñas · guardado</span>`;
+  }catch(e){
+    document.getElementById("stA").innerHTML=`<span style="color:var(--amber)">Error: ${e.message}</span>`;
+  }
+  btn.disabled=false;btn.textContent="Actualizar";
+}
+
+async function loadSheetB(url){
+  url=url||document.getElementById("sheetB").value.trim();
+  if(!url)return;
+  const btn=document.getElementById("btnSheetB");btn.disabled=true;btn.textContent="Cargando...";
+  try{
+    const data=await parseCSV(url);
+    window._compData=data;
+    const hotels=[...new Set(data.map(r=>{
+      const k=Object.keys(r).find(k=>k.toLowerCase().includes("hotel")||k.toLowerCase().includes("name"));
+      return r[k]||"Desconocido";
+    }))].filter(h=>h&&h.length>1);
+    const hs=document.getElementById("hotelSelect");
+    hs.innerHTML=hotels.map((h,i)=>`<div class="hbtn${i===0?" sel":""}" onclick="selectHotel(this,'${h}')">${h}</div>`).join("");
+    if(hotels[0])renderCompReviews(hotels[0],data);
+    localStorage.setItem("boh_url_b",url);
+    document.getElementById("stB").innerHTML=`<span style="color:var(--purple)">${data.length} reseñas · ${hotels.length} hoteles · guardado</span>`;
+  }catch(e){
+    document.getElementById("stB").innerHTML=`<span style="color:var(--amber)">Error: ${e.message}</span>`;
+  }
+  btn.disabled=false;btn.textContent="Actualizar";
+}
+
+function forgetA(){
+  localStorage.removeItem("boh_url_a");localStorage.removeItem("boh_sync_a");
+  document.getElementById("sheetA").value="";
+  document.getElementById("stA").innerHTML="<span>URL eliminada</span>";
+  document.getElementById("btnSheetA").textContent="Cargar";
+}
+function forgetB(){
+  localStorage.removeItem("boh_url_b");
+  document.getElementById("sheetB").value="";
+  document.getElementById("stB").innerHTML="<span>URL eliminada</span>";
+  document.getElementById("btnSheetB").textContent="Cargar";
+}
+
+async function loadSheetC(url){
+  url=url||document.getElementById("sheetC").value.trim();
+  if(!url)return;
+  const btn=document.getElementById("btnSheetC");btn.disabled=true;btn.textContent="Cargando...";
+  try{
+    const data=await parseCSV(url);
+    if(!data.length)throw new Error("Sin datos");
+    window._priceData=data;
+    localStorage.setItem("boh_url_c",url);
+
+    // KPIs BoH
+    const boh=data.filter(r=>(r["nombre hotel"]||"").toLowerCase().includes("boh"));
+    const all=data.filter(r=>parseFloat(r["precio (usd)"])>0);
+    const bohPrices=boh.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
+    const allPrices=all.map(r=>parseFloat(r["precio (usd)"])||0).filter(p=>p>0);
+    const bohAvg=bohPrices.length?(bohPrices.reduce((a,b)=>a+b,0)/bohPrices.length).toFixed(0):"-";
+    const mktAvg=allPrices.length?(allPrices.reduce((a,b)=>a+b,0)/allPrices.length).toFixed(0):"-";
+    const bohMin=bohPrices.length?Math.min(...bohPrices).toFixed(0):"-";
+    const bohMax=bohPrices.length?Math.max(...bohPrices).toFixed(0):"-";
+    const diff=bohAvg!=="-"&&mktAvg!=="-"?(((bohAvg-mktAvg)/mktAvg)*100).toFixed(1):"-";
+
+    document.getElementById("kC-avg").textContent="$"+bohAvg;
+    document.getElementById("kC-range").textContent="$"+bohMin+"–$"+bohMax;
+    document.getElementById("kC-mkt").textContent="$"+mktAvg;
+    document.getElementById("kC-diff").textContent=(diff>0?"+":"")+diff+"%";
+    document.getElementById("kC-diff").className="kpi-v "+(diff>0?"va":"vg");
+    document.getElementById("kC-rooms").textContent=boh.length;
+
+    // Tabla de precios por hotel
+    renderPriceTable(data);
+    document.getElementById("stC").innerHTML=`<span style="color:var(--amber)">${data.length} filas · guardado</span>`;
+  }catch(e){
+    document.getElementById("stC").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+  }
+  btn.disabled=false;btn.textContent="Actualizar";
+}
+
+function renderPriceTable(data){
+  // Agrupar por hotel — precio min de cada hotel
+  const hotels={};
+  data.forEach(r=>{
+    const h=r["nombre hotel"]||r["hotel"]||"";
+    const p=parseFloat(r["precio (usd)"])||0;
+    if(!h||!p)return;
+    if(!hotels[h]||p<hotels[h].min)hotels[h]={min:p,max:hotels[h]?Math.max(hotels[h].max,p):p,count:(hotels[h]?.count||0)+1};
+    if(hotels[h])hotels[h].max=Math.max(hotels[h].max,p);
+    if(hotels[h])hotels[h].count=(hotels[h].count||1);
+  });
+  // Recalcular correctamente
+  const grouped={};
+  data.forEach(r=>{
+    const h=r["nombre hotel"]||r["hotel"]||"";
+    const p=parseFloat(r["precio (usd)"])||0;
+    if(!h||!p)return;
+    if(!grouped[h])grouped[h]={min:p,max:p,sum:0,count:0,esBoh:h.toLowerCase().includes("boh")};
+    grouped[h].min=Math.min(grouped[h].min,p);
+    grouped[h].max=Math.max(grouped[h].max,p);
+    grouped[h].sum+=p;
+    grouped[h].count++;
+  });
+  const sorted=Object.entries(grouped).sort((a,b)=>a[1].min-b[1].min);
+  const allMins=sorted.map(([,v])=>v.min);
+  const globalMin=Math.min(...allMins);
+  const globalMax=Math.max(...allMins);
+
+  const tb=document.getElementById("priceTable");
+  tb.innerHTML="";
+  sorted.forEach(([name,v])=>{
+    const avg=(v.sum/v.count).toFixed(0);
+    const pct=((v.min-globalMin)/(globalMax-globalMin||1)*100).toFixed(0);
+    const cls=v.min<=globalMin*1.1?"price-low":v.min<=globalMin*1.4?"price-mid":"price-high";
+    tb.innerHTML+=`<tr class="${v.esBoh?"boh-row":""}">
+      <td style="font-weight:${v.esBoh?"600":"400"};font-size:12px">${v.esBoh?"★ ":""} ${name}</td>
+      <td><span class="price-pill ${cls}">$${v.min}</span></td>
+      <td><span class="price-pill">$${v.max}</span></td>
+      <td><span class="price-pill">$${avg}</span></td>
+      <td style="width:120px">
+        <div style="background:var(--bg4);border-radius:3px;height:5px;overflow:hidden">
+          <div style="height:5px;border-radius:3px;background:${v.esBoh?"var(--green)":"var(--blue)"};width:${Math.max(4,pct)}%"></div>
+        </div>
+      </td>
+      <td style="font-size:10px;color:var(--text3)">${v.count} hab.</td>
+    </tr>`;
+  });
+}
+
+function forgetC(){
+  localStorage.removeItem("boh_url_c");
+  document.getElementById("sheetC").value="";
+  document.getElementById("stC").innerHTML="<span>URL eliminada</span>";
+  document.getElementById("btnSheetC").textContent="Cargar";
+}
+
+function selectHotel(el,name){
+  document.querySelectorAll(".hbtn").forEach(b=>b.classList.remove("sel"));
+  el.classList.add("sel");
+  const data=window._compData||[];
+  renderCompReviews(name,data);
+}
+
+function renderCompReviews(name,data){
+  document.getElementById("compCardTitle").innerHTML=`Reseñas · <span style="color:var(--purple)">${name}</span>`;
+  const keys=Object.keys(data[0]||{});
+  const hotelC=keys.find(k=>k.toLowerCase().includes("hotel")||k.toLowerCase().includes("name"))||keys[0];
+  const scoreC=keys.find(k=>k.toLowerCase().includes("score")||k.toLowerCase().includes("rating"))||keys[1];
+  const posC=keys.find(k=>k.toLowerCase().includes("pos")||k.toLowerCase().includes("liked"))||"";
+  const negC=keys.find(k=>k.toLowerCase().includes("neg")||k.toLowerCase().includes("disliked"))||"";
+  const dateC=keys.find(k=>k.toLowerCase().includes("date")||k.toLowerCase().includes("fecha"))||"";
+  const nameC=keys.find(k=>k.toLowerCase().includes("reviewer")||k.toLowerCase().includes("guest"))||"";
+  const filtered=data.filter(r=>r[hotelC]===name).slice(0,10);
+  const rb=document.getElementById("reviewsB");
+  if(!filtered.length){rb.innerHTML=`<div class="empty">No hay reseñas de ${name}<br>en el Sheet cargado.</div>`;return;}
+  rb.innerHTML=filtered.map((r,i)=>revHTML({
+    reviewer:r[nameC]||"Anónimo",country:r["country"]||r["pais"]||"",
+    date:r[dateC]||"",score:parseFloat(r[scoreC])||8,
+    pos:r[posC]||"",neg:r[negC]||"",tags:[]
+  },i)).join("");
+}
+
+// ══════════════════════════════════════════════════
+// AI — ENV A (analizar reseña BoH)
+// ══════════════════════════════════════════════════
+async function analyzeA(){
+  const text=document.getElementById("inputA").value.trim();if(!text)return;
+  const btn=document.getElementById("btnA");const spin=document.getElementById("spinA");
+  btn.disabled=true;spin.style.display="block";document.getElementById("btxtA").textContent="Analizando...";
+  const res=document.getElementById("resA");res.classList.remove("show");
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,
+        system:`Analiza reseñas de BoH Manila, un hotel boutique en barrio Manila, Medellín. Responde SOLO JSON sin markdown:
+{"score_estimado":9.0,"sentimiento":"positivo","resumen":"1 frase","temas_positivos":["tema"],"temas_negativos":["tema"],"prioridad":"urgente|alta|media|baja","accion":"texto de acción específica para el equipo de BoH"}`,
+        messages:[{role:"user",content:`Reseña de BoH Manila:\n\n${text}`}]})});
+    const d=await r.json();
+    let p;try{p=JSON.parse(d.content[0].text.replace(/```json|```/g,"").trim());}catch{p=null;}
+    if(p){
+      const sc=scoreColor(p.score_estimado);
+      const pc=p.prioridad==="urgente"?"var(--red)":p.prioridad==="alta"?"var(--amber)":"var(--blue)";
+      res.innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:500">Análisis · <span style="color:${sc}">${p.sentimiento}</span></div>
+          <div style="font-size:20px;font-weight:600;color:${sc}">${p.score_estimado}<span style="font-size:11px;color:var(--text3)">/10</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6">${p.resumen}</div>
+        <div class="tags" style="margin-bottom:8px">${(p.temas_positivos||[]).map(t=>`<span class="tag tp">${t}</span>`).join("")}${(p.temas_negativos||[]).map(t=>`<span class="tag tn">${t}</span>`).join("")}</div>
+        <div class="action-box"><div class="action-label" style="color:${pc}">Acción ${p.prioridad}</div>${p.accion}</div>`;
+    }else{res.innerHTML=`<div style="font-size:11px">${d.content[0].text}</div>`;}
+    res.classList.add("show");
+  }catch(e){res.innerHTML=`<div style="font-size:11px;color:var(--red)">Error al conectar.</div>`;res.classList.add("show");}
+  btn.disabled=false;spin.style.display="none";document.getElementById("btxtA").textContent="Analizar reseña";
+}
+
+// ══════════════════════════════════════════════════
+// AI — ENV B (extraer lección de competidor)
+// ══════════════════════════════════════════════════
+async function analyzeB(){
+  const text=document.getElementById("inputB").value.trim();if(!text)return;
+  const hotelName=document.getElementById("compNameInput").value.trim()||"un competidor";
+  const btn=document.getElementById("btnB");const spin=document.getElementById("spinB");
+  btn.disabled=true;spin.style.display="block";document.getElementById("btxtB").textContent="Extrayendo lección...";
+  const res=document.getElementById("resB");res.classList.remove("show");
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:`Eres consultor de hospitalidad. Analizas reseñas de hoteles competidores para extraer lecciones aplicables a BoH Manila, hotel boutique en barrio Manila, Medellín (score actual 9.4, fortalezas: ubicación, limpieza, diseño moderno, personal amable).
+
+Responde SOLO JSON sin markdown:
+{"error_del_competidor":"qué salió mal en ese hotel","por_que_ocurre":"causa raíz breve","ya_lo_resuelve_boh":true,"como_lo_resuelve_boh":"si ya lo resuelve, cómo","accion_boh":"si no lo resuelve, acción concreta para BoH","urgencia":"alta|media|baja","leccion_titulo":"título corto de la lección"}`,
+        messages:[{role:"user",content:`Reseña negativa de ${hotelName}:\n\n${text}`}]})});
+    const d=await r.json();
+    let p;try{p=JSON.parse(d.content[0].text.replace(/```json|```/g,"").trim());}catch{p=null;}
+    if(p){
+      const uc=p.urgencia==="alta"?"var(--red)":p.urgencia==="media"?"var(--amber)":"var(--blue)";
+      res.innerHTML=`
+        <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:var(--purple)">📌 ${p.leccion_titulo}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:5px"><span style="color:var(--text);font-weight:500">Error detectado: </span>${p.error_del_competidor}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px"><span style="color:var(--text);font-weight:500">Causa raíz: </span>${p.por_que_ocurre}</div>
+        ${p.ya_lo_resuelve_boh
+          ?`<div style="background:var(--gdim);border:1px solid rgba(45,216,150,.2);border-radius:7px;padding:10px;font-size:11px;line-height:1.6"><div style="color:var(--green);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">✓ BoH ya lo tiene resuelto</div>${p.como_lo_resuelve_boh}</div>`
+          :`<div class="action-box" style="border-color:${uc}"><div class="action-label" style="color:${uc}">Acción para BoH · urgencia ${p.urgencia}</div>${p.accion_boh}</div>`
+        }`;
+      // Append to lessons list
+      const ll=document.getElementById("lessonsB");
+      if(ll.querySelector(".empty"))ll.innerHTML="";
+      ll.innerHTML=`<div class="lesson">
+        <div class="lesson-header">
+          <div class="lesson-icon ${p.ya_lo_resuelve_boh?"li-green":"li-red"}">${p.ya_lo_resuelve_boh?"✓":"!"}</div>
+          <div><div class="lesson-hotel">${hotelName}</div><div class="lesson-title">${p.leccion_titulo}</div></div>
+        </div>
+        <div class="lesson-desc">${p.error_del_competidor}</div>
+        ${p.ya_lo_resuelve_boh
+          ?`<div class="lesson-apply" style="color:var(--green)">ya lo tenemos resuelto — ${p.como_lo_resuelve_boh}</div>`
+          :`<div class="lesson-apply">${p.accion_boh}</div>`}
+      </div>`+ll.innerHTML;
+    }else{res.innerHTML=`<div style="font-size:11px">${d.content[0].text}</div>`;}
+    res.classList.add("show");
+  }catch(e){res.innerHTML=`<div style="font-size:11px;color:var(--red)">Error al conectar.</div>`;res.classList.add("show");}
+  btn.disabled=false;spin.style.display="none";document.getElementById("btxtB").textContent="Extraer lección para BoH";
+}
+
+// ══════════════════════════════════════════════════
+initA();
+
+// Pre-cargar URL de precios
+const _priceUrl="https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv";
+if(!localStorage.getItem("boh_url_c")){
+  localStorage.setItem("boh_url_c",_priceUrl);
+}
+const _sc=localStorage.getItem("boh_url_c")||_priceUrl;
+document.getElementById("sheetC").value=_sc;
+loadSheetC(_sc);
+</script>
+</body>
+</html>
