@@ -206,6 +206,14 @@ pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;paddi
     <div class="kpi"><div class="kpi-l">Reseñas este mes</div><div class="kpi-v vb" id="kA-count">5</div><div class="kpi-s">Booking.com</div></div>
   </div>
 
+  <!-- KPIs precios BoH (se llena cuando carga el sheet de precios) -->
+  <div class="kpi-row" id="kpiPricesRow" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><div class="kpi-l">ADR BoH promedio</div><div class="kpi-v va" id="kA-adr">—</div><div class="kpi-s">USD / noche</div></div>
+    <div class="kpi"><div class="kpi-l">ADR mercado</div><div class="kpi-v vp" id="kA-mkt">—</div><div class="kpi-s">18 competidores</div></div>
+    <div class="kpi"><div class="kpi-l">BoH vs mercado</div><div class="kpi-v" id="kA-diff">—</div><div class="kpi-s">diferencia %</div></div>
+    <div class="kpi"><div class="kpi-l">Posición en mercado</div><div class="kpi-v vb" id="kA-rank">—</div><div class="kpi-s">por ADR</div></div>
+  </div>
+
   <!-- Chart + Categories -->
   <div class="row2">
     <div class="card">
@@ -618,7 +626,7 @@ async function loadSheetA(url){
     });
     const rows=boh.length?boh:data; // fallback a todos si no encuentra BoH
     const mapped=rows.map(r=>({
-      reviewer:r["reviewer"]||r["nombre"]||"Anónimo",
+      reviewer:r["reviewer"]||r["titulo"]||r["reviewtitle"]||r["nombre"]||"",
       country:r["pais"]||r["país"]||r["country"]||"",
       date:r["fecha"]||r["fecha reseña"]||"",
       score:parseFloat(r["score"]||r["rating"]||r["puntuacion"])||0,
@@ -653,9 +661,16 @@ async function loadSheetB(url){
     window._compData=data;
     // Usar columna "hotel" exacta (primer match exacto, no parcial)
     const hotelKey=Object.keys(data[0]||{}).find(k=>k==="hotel"||k==="nombre hotel")||"hotel";
-    const hotels=[...new Set(data.map(r=>r[hotelKey]||""))].filter(h=>h&&h.length>1&&!h.toLowerCase().includes("boh"));
+    const allHotels=[...new Set(data.map(r=>r[hotelKey]||""))].filter(h=>h&&h.length>1);
+    // BoH primero con estrella, luego competidores
+    const bohEntry=allHotels.find(h=>h.toLowerCase().includes("boh"))||"";
+    const competitors=allHotels.filter(h=>!h.toLowerCase().includes("boh"));
+    const hotels=[...( bohEntry?[bohEntry]:[]),...competitors];
     const hs=document.getElementById("hotelSelect");
-    hs.innerHTML=hotels.map((h,i)=>`<div class="hbtn${i===0?" sel":""}" onclick="selectHotel(this,'${h.replace(/'/g,"\\\'")}')">${h}</div>`).join("");
+    hs.innerHTML=hotels.map((h,i)=>{
+      const isBoh=h.toLowerCase().includes("boh");
+      return `<div class="hbtn${i===0?" sel":""}" style="${isBoh?"background:var(--gdim);border-color:var(--green);color:var(--green)":""}" onclick="selectHotel(this,'${h.replace(/'/g,"\\\'")}')">${isBoh?"★ ":""}${h}</div>`;
+    }).join("");
     if(hotels[0])renderCompReviews(hotels[0],data);
     localStorage.setItem("boh_url_b",url);
     document.getElementById("stB").innerHTML=`<span style="color:var(--purple)">${data.length} reseñas · ${hotels.length} hoteles · guardado</span>`;
@@ -691,6 +706,8 @@ async function loadSheetC(url){
     const fechas=data.map(r=>r["fecha de actualizacion"]||r["fecha de actualización"]||"").filter(f=>f);
     if(fechas.length)document.getElementById("kC-fecha").textContent=fechas[0];
     applyFilter();
+    // Poblar KPIs de precios en pestaña Mi hotel
+    updateBohPriceKPIs(data);
     document.getElementById("stC").innerHTML=`<span style="color:var(--amber)">${data.length} filas · guardado</span>`;
   }catch(e){
     document.getElementById("stC").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
@@ -701,26 +718,21 @@ async function loadSheetC(url){
 function applyFilter(){
   const data=window._priceData||[];
   if(!data.length)return;
+  const cols=detectCols(data);
+  window._priceCols=cols;
   const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
   const filtered=cancelVal==="all"?data:data.filter(r=>{
-    const c=(r["tipo de cancelaci\u00f3n"]||r["tipo de cancelacion"]||r["cancelacion"]||"").toLowerCase();
-    return c===cancelVal||c.includes(cancelVal.replace("_",""));
+    const c=getVal(r,cols.cancel).toLowerCase();
+    return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
   });
-  renderKPIs(filtered);
-  renderHotelTable(filtered);
-  renderDetailTable(filtered,null);
+  renderKPIs(filtered,cols);
+  renderHotelTable(filtered,cols);
+  renderDetailTable(filtered,cols,null);
 }
 
-function getCol(row,...names){
-  for(const n of names){
-    if(row[n]!==undefined&&row[n]!=="")return row[n];
-  }
-  return "";
-}
-
-function renderKPIs(data){
-  const prices=data.map(r=>parseFloat(getCol(r,"precio (usd)","precio","price"))||0).filter(p=>p>0);
-  const m2s=data.map(r=>parseFloat(getCol(r,"precio x m2","precio/m2","preciom2"))||0).filter(p=>p>0);
+function renderKPIs(data,cols){
+  const prices=data.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
+  const m2s=data.map(r=>parseFloat(getVal(r,cols.m2))||0).filter(p=>p>0);
   const avg=prices.length?(prices.reduce((a,b)=>a+b,0)/prices.length):0;
   const m2avg=m2s.length?(m2s.reduce((a,b)=>a+b,0)/m2s.length):0;
   const max=prices.length?Math.max(...prices):0;
@@ -733,81 +745,95 @@ function renderKPIs(data){
 let _hotelSort="adr";
 function sortHotel(col){_hotelSort=col;applyFilter();}
 
-function renderHotelTable(data){
+function renderHotelTable(data,cols){
   const grouped={};
   data.forEach(r=>{
-    const h=getCol(r,"nombre hotel","hotel");
-    const p=parseFloat(getCol(r,"precio (usd)","precio"))||0;
-    const m=parseFloat(getCol(r,"precio x m2","precio/m2"))||0;
-    const rt=parseFloat(getCol(r,"rating"))||0;
+    const h=getVal(r,cols.hotel);
+    const p=parseFloat(getVal(r,cols.precio))||0;
+    const m=parseFloat(getVal(r,cols.m2))||0;
+    const rt=parseFloat(getVal(r,cols.rating))||0;
     if(!h||!p)return;
     if(!grouped[h])grouped[h]={sum:0,m2sum:0,count:0,rating:rt,esBoh:h.toLowerCase().includes("boh")};
-    grouped[h].sum+=p;
-    grouped[h].m2sum+=m;
-    grouped[h].count++;
+    grouped[h].sum+=p;grouped[h].m2sum+=m;grouped[h].count++;
     if(rt)grouped[h].rating=rt;
   });
-  let entries=Object.entries(grouped).map(([name,v])=>({
-    name,
-    adr:v.sum/v.count,
-    m2:v.m2sum/v.count,
-    rating:v.rating,
-    esBoh:v.esBoh
-  }));
+  let entries=Object.entries(grouped).map(([name,v])=>({name,adr:v.sum/v.count,m2:v.m2sum/v.count,rating:v.rating,esBoh:v.esBoh}));
   entries.sort((a,b)=>_hotelSort==="m2"?b.m2-a.m2:b.adr-a.adr);
   const tb=document.getElementById("priceTable");
-  tb.innerHTML=entries.map((e,i)=>`<tr class="${e.esBoh?"boh-row":""}" style="cursor:pointer" onclick="filterDetail('${e.name.replace(/'/g,"\\'")}')">
+  tb.innerHTML=entries.map((e,i)=>`<tr class="${e.esBoh?"boh-row":""}" style="cursor:pointer" onclick="filterDetail('${e.name.replace(/'/g,"\'")}')">
     <td style="color:var(--text3);font-size:11px">${i+1}</td>
     <td style="font-weight:${e.esBoh?"600":"400"}">${e.esBoh?"★ ":""}${e.name}</td>
     <td style="text-align:right;font-family:var(--mono)">${e.rating||"—"}</td>
     <td style="text-align:right;font-family:var(--mono);color:var(--amber)">$${e.adr.toFixed(2)}</td>
     <td style="text-align:right;font-family:var(--mono)">$${e.m2.toFixed(2)}</td>
   </tr>`).join("");
-  document.getElementById("thADR").textContent=(_hotelSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)");
-  document.getElementById("thM2").textContent=(_hotelSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom");
+  document.getElementById("thADR").textContent=_hotelSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)";
+  document.getElementById("thM2").textContent=_hotelSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom";
 }
 
 let _detailSort="adr",_detailHotel=null;
-function sortDetail(col){_detailSort=col;renderDetailTable(window._priceData||[],_detailHotel);}
+function sortDetail(col){_detailSort=col;const c=window._priceCols||detectCols(window._priceData||[]);renderDetailTable(window._priceData||[],c,_detailHotel);}
 function filterDetail(hotel){
   _detailHotel=hotel;
   document.getElementById("detailHotelLabel").textContent=hotel;
-  renderDetailTable(window._priceData||[],hotel);
+  const c=window._priceCols||detectCols(window._priceData||[]);
+  renderDetailTable(window._priceData||[],c,hotel);
 }
 
-function renderDetailTable(data,hotel){
+function renderDetailTable(data,cols,hotel){
   const cancelVal=document.querySelector('input[name="cancel"]:checked')?.value||"all";
   let rows=cancelVal==="all"?data:data.filter(r=>{
-    const c=(r["tipo de cancelaci\u00f3n"]||r["tipo de cancelacion"]||"").toLowerCase();
-    return c===cancelVal||c.includes(cancelVal.replace("_",""));
+    const c=getVal(r,cols.cancel).toLowerCase();
+    return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
   });
-  if(hotel)rows=rows.filter(r=>getCol(r,"nombre hotel","hotel")===hotel);
-  rows=rows.filter(r=>parseFloat(getCol(r,"precio (usd)","precio"))||0);
-  rows.sort((a,b)=>{
-    if(_detailSort==="m2")return (parseFloat(getCol(b,"precio x m2"))||0)-(parseFloat(getCol(a,"precio x m2"))||0);
-    return (parseFloat(getCol(b,"precio (usd)"))||0)-(parseFloat(getCol(a,"precio (usd)"))||0);
-  });
+  if(hotel)rows=rows.filter(r=>getVal(r,cols.hotel)===hotel);
+  rows=rows.filter(r=>parseFloat(getVal(r,cols.precio))||0);
+  rows.sort((a,b)=>_detailSort==="m2"?(parseFloat(getVal(b,cols.m2))||0)-(parseFloat(getVal(a,cols.m2))||0):(parseFloat(getVal(b,cols.precio))||0)-(parseFloat(getVal(a,cols.precio))||0));
   const tb=document.getElementById("detailTable");
   tb.innerHTML=rows.slice(0,100).map((r,i)=>{
-    const adr=parseFloat(getCol(r,"precio (usd)","precio"))||0;
-    const m2=parseFloat(getCol(r,"precio x m2"))||0;
-    const area=getCol(r,"\u00e1rea (m2)","area (m2)","area");
-    const camas=getCol(r,"n\u00famero de camas","numero de camas","camas");
-    const tipo=getCol(r,"tipo de habitaci\u00f3n","tipo de habitacion","tipo habitacion");
-    const bed=getCol(r,"tama\u00f1o de cama","tamano de cama","cama");
+    const adr=parseFloat(getVal(r,cols.precio))||0;
+    const m2=parseFloat(getVal(r,cols.m2))||0;
     return `<tr>
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
-      <td style="font-size:11px">${tipo}</td>
-      <td style="text-align:right;font-family:var(--mono)">${area}</td>
-      <td style="text-align:right;font-family:var(--mono)">${camas}</td>
-      <td style="font-size:10px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${bed}</td>
-      <td style="text-align:right;font-family:var(--mono);color:var(--amber)">$${adr.toFixed(2)}</td>
+      <td style="font-size:11px">${getVal(r,cols.room)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${getVal(r,cols.area)}</td>
+      <td style="text-align:right;font-family:var(--mono)">${getVal(r,cols.beds)}</td>
+      <td style="font-size:10px;color:var(--text2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getVal(r,cols.bedsize)}</td>
+      <td style="text-align:right;font-family:var(--mono);color:var(--amber)">${adr?"$"+adr.toFixed(2):"—"}</td>
       <td style="text-align:right;font-family:var(--mono)">${m2?"$"+m2.toFixed(2):"—"}</td>
     </tr>`;
   }).join("");
 }
 
-function forgetC(){
+
+function updateBohPriceKPIs(data){
+  const cols=detectCols(data);
+  // ADR BoH
+  const bohRows=data.filter(r=>getVal(r,cols.hotel).toLowerCase().includes("boh"));
+  const bohPrices=bohRows.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
+  const bohAvg=bohPrices.length?(bohPrices.reduce((a,b)=>a+b,0)/bohPrices.length):0;
+  // ADR mercado (todos)
+  const allPrices=data.map(r=>parseFloat(getVal(r,cols.precio))||0).filter(p=>p>0);
+  const mktAvg=allPrices.length?(allPrices.reduce((a,b)=>a+b,0)/allPrices.length):0;
+  // Posición de BoH entre hoteles por ADR promedio
+  const grouped={};
+  data.forEach(r=>{
+    const h=getVal(r,cols.hotel);const p=parseFloat(getVal(r,cols.precio))||0;
+    if(!h||!p)return;
+    if(!grouped[h])grouped[h]={sum:0,count:0};
+    grouped[h].sum+=p;grouped[h].count++;
+  });
+  const ranked=Object.entries(grouped).map(([n,v])=>({n,avg:v.sum/v.count})).sort((a,b)=>b.avg-a.avg);
+  const rank=ranked.findIndex(e=>e.n.toLowerCase().includes("boh"))+1;
+  const diff=bohAvg&&mktAvg?(((bohAvg-mktAvg)/mktAvg)*100):0;
+  document.getElementById("kA-adr").textContent=bohAvg?"$"+bohAvg.toFixed(0):"—";
+  document.getElementById("kA-mkt").textContent=mktAvg?"$"+mktAvg.toFixed(0):"—";
+  const diffEl=document.getElementById("kA-diff");
+  diffEl.textContent=diff?(diff>0?"+":"")+diff.toFixed(1)+"%":"—";
+  diffEl.className="kpi-v "+(diff>0?"vr":diff<0?"vg":"va"); // rojo si más caro, verde si más barato
+  document.getElementById("kA-rank").textContent=rank?"#"+rank+" / "+ranked.length:"—";
+}
+
   localStorage.removeItem("boh_url_c");
   document.getElementById("sheetC").value="";
   document.getElementById("stC").innerHTML="<span>URL eliminada</span>";
