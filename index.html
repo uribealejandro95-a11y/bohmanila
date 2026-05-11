@@ -212,74 +212,87 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 </div>
 
 <!-- ═══ C: PRECIOS ════════════════════════════════════════════ -->
+<!-- ═══ C: PRECIOS / REVENUE ═════════════════════════════════ -->
 <div class="env" id="env-c">
 
   <div class="strip">
-    <label>Precios (Sheet Datos CSV)</label>
-    <input id="urlC" placeholder="URL CSV pestaña Datos">
+    <label>Historico_Precios (CSV)</label>
+    <input id="urlC" placeholder="URL CSV pestaña Historico_Precios">
     <button class="btn ba" onclick="loadC()">Cargar</button>
     <button class="btn bx" onclick="clearUrl('c')">✕</button>
     <span class="st" id="stC">—</span>
   </div>
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
-    <div>
-      <div style="font-size:20px;font-weight:600;color:var(--amber)">(BoH) Hotels — Benchmark Precios Competencia</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px">*Precio de habitaciones disponibles para una reserva de 1 noche · 7 días</div>
-    </div>
-    <div style="text-align:right"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Fecha Actualización</div><div style="font-size:15px;font-weight:600" id="kC-fecha">—</div></div>
+  <!-- KPIs BoH -->
+  <div class="krow" style="grid-template-columns:repeat(6,1fr)">
+    <div class="kpi"><div class="kl">BoH hoy (1D)</div><div class="kv ka" id="kC-boh1d">—</div><div class="ks">ADR promedio</div></div>
+    <div class="kpi"><div class="kl">BoH fin de semana</div><div class="kv ka" id="kC-bohWk">—</div><div class="ks">ADR promedio</div></div>
+    <div class="kpi"><div class="kl">Mercado 1D</div><div class="kv kp" id="kC-mkt1d">—</div><div class="ks">ADR comp set</div></div>
+    <div class="kpi"><div class="kl">Mercado weekend</div><div class="kv kp" id="kC-mktWk">—</div><div class="ks">ADR comp set</div></div>
+    <div class="kpi"><div class="kl">Posición 1D</div><div class="kv kb" id="kC-rank1d">—</div><div class="ks">en el mercado</div></div>
+    <div class="kpi"><div class="kl">Posición weekend</div><div class="kv kb" id="kC-rankWk">—</div><div class="ks">en el mercado</div></div>
   </div>
 
-  <div class="price-layout">
-    <div style="display:flex;flex-direction:column;gap:14px">
-
-      <div class="card">
-        <div class="ct">KPI General x Hotel</div>
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead><tr>
-              <th>#</th>
-              <th>Nombre Hotel</th>
-              <th style="text-align:right">Rating</th>
-              <th style="text-align:right" onclick="sortC('adr')" id="thADR">ADR Prom (USD) ▾</th>
-              <th style="text-align:right" onclick="sortC('m2')" id="thM2">ADR / m2 prom</th>
-            </tr></thead>
-            <tbody id="tblHotel"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
-          </table>
-        </div>
+  <!-- Filtros de semana -->
+  <div class="card" style="padding:12px 18px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Semana de captura</div>
+      <div id="weekFilters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn ba" style="padding:4px 10px;font-size:10px" onclick="setScenario('all')" id="scAll">Ambos</button>
+        <button class="btn bx" style="padding:4px 10px;font-size:10px" onclick="setScenario('1D')"  id="sc1D">1D</button>
+        <button class="btn bx" style="padding:4px 10px;font-size:10px" onclick="setScenario('Weekend')" id="scWk">Weekend</button>
       </div>
+    </div>
+  </div>
 
-      <div class="card">
-        <div class="ct">Detalle x habitación x hotel <span id="detailLabel" style="color:var(--text3)">todos</span></div>
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead><tr>
-              <th>#</th><th>Tipo de Habitación</th>
-              <th style="text-align:right">Área m2</th>
-              <th style="text-align:right">Camas</th>
-              <th>Tamaño Cama</th>
-              <th style="text-align:right" onclick="sortDetail('adr')">ADR (USD) ▾</th>
-              <th style="text-align:right" onclick="sortDetail('m2')">ADR /m2</th>
-            </tr></thead>
-            <tbody id="tblDetail"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
-          </table>
-        </div>
+  <!-- Main grid -->
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
+
+    <!-- Tabla comparativa 1D vs Weekend -->
+    <div class="card">
+      <div class="ct">Comparativo 1D vs Weekend — última captura <span style="color:var(--text3);font-size:10px">clic en hotel para ver detalle</span></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>#</th>
+            <th>Hotel</th>
+            <th style="text-align:right">Rating</th>
+            <th style="text-align:right;color:var(--blue)">ADR 1D</th>
+            <th style="text-align:right;color:var(--amber)">ADR Wknd</th>
+            <th style="text-align:right">Wknd Premium</th>
+            <th style="text-align:right">vs BoH</th>
+          </tr></thead>
+          <tbody id="tblCompare"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
+        </table>
       </div>
-
     </div>
 
-    <div class="price-kpis">
-      <div class="filter-card">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Tipo de Cancelación</div>
-        <label><input type="radio" name="cancelF" value="all" checked onchange="filterC()"> Todos</label>
-        <label><input type="radio" name="cancelF" value="free_cancellation" onchange="filterC()"> free_cancellation</label>
-        <label><input type="radio" name="cancelF" value="non_refundable" onchange="filterC()"> non_refundable</label>
-      </div>
-      <div class="kpi"><div class="kl">Promedio — Tarifa</div><div class="kv ka" id="kC-avg">—</div></div>
-      <div class="kpi"><div class="kl">Promedio — $/m2</div><div class="kv ka" id="kC-m2">—</div></div>
-      <div class="kpi"><div class="kl">Precio Max</div><div class="kv" id="kC-max">—</div></div>
-      <div class="kpi"><div class="kl">Record Count</div><div class="kv" id="kC-cnt">—</div></div>
+    <!-- Grafica de barras actual -->
+    <div class="card">
+      <div class="ct" id="barChartTitle">ADR por hotel — última semana</div>
+      <div class="chart-wrap" style="height:320px"><canvas id="chartBars"></canvas></div>
     </div>
+
+  </div>
+
+  <!-- Historico -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+
+    <!-- Evolucion historica BoH -->
+    <div class="card">
+      <div class="ct">Evolución histórica de precios <span style="color:var(--text3);font-size:10px">BoH vs mercado semana a semana</span></div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartHistory"></canvas></div>
+    </div>
+
+    <!-- Detalle habitaciones del hotel seleccionado -->
+    <div class="card">
+      <div class="ct">Habitaciones <span id="detailHotelName" style="color:var(--amber)">— selecciona un hotel</span></div>
+      <div id="tblRooms" style="overflow-y:auto;max-height:200px">
+        <div class="empty">Clic en un hotel de la tabla</div>
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -289,7 +302,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 // URLS (hardcoded — cambiar si cambian los sheets)
 // ═══════════════════════════════════════════════════
 const URL_RESENAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv&gid=1749390536";
-const URL_PRECIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?output=csv";
+const URL_PRECIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRVBIvzbGzqBUTqfQnUfu3moajKHtxkOaWCFoOWwd4fa_HDGZtia0fNDQrSGtQlNjSefE3OQjFFNpMR/pub?gid=1854340046&single=true&output=csv";
 
 // ═══════════════════════════════════════════════════
 // NAV
@@ -533,177 +546,281 @@ function renderChartB(labels, data, boh){
 }
 
 // ═══════════════════════════════════════════════════
-// ENV C — PRECIOS
-// ═══════════════════════════════════════════════════
-let _priceData = [], _priceSort = "adr", _detailSort = "adr", _detailHotel = null;
+// ENV C — PRECIOS / REVENUE MANAGEMENT
+let _priceData=[], _activeWeek="latest", _activeScenario="all", _selectedHotel=null;
+
+function parsePrice(s){ return parseFloat(String(s||"").replace(/[$,\s]/g,""))||0; }
 
 async function loadC(){
-  const url = document.getElementById("urlC").value.trim() || URL_PRECIOS;
-  document.getElementById("stC").textContent = "Cargando...";
+  const url=document.getElementById("urlC").value.trim()||URL_PRECIOS;
+  document.getElementById("stC").textContent="Cargando...";
   try{
-    const data = await fetchCSV(url);
-    _priceData = data;
-    localStorage.setItem("bohUrlC", url);
-
-    // Show what keys we got
-    const keys = Object.keys(data[0]||{});
-    console.log("Price CSV keys:", keys);
-    console.log("First row sample:", JSON.stringify(data[0]));
-
-    // Fecha
-    const fk = keys.find(k=>k.includes("fecha"))||"";
-    if(fk && data[0][fk]) document.getElementById("kC-fecha").textContent = data[0][fk];
-
-    filterC();
-    updateBohPriceKPIs(data, keys);
-    document.getElementById("stC").textContent = data.length+" filas";
+    const data=await fetchCSV(url);
+    _priceData=data;
+    localStorage.setItem("bohUrlC",url);
+    buildWeekFilters(data);
+    renderPricesTab();
+    updateBohPriceKPIs(data);
+    document.getElementById("stC").textContent=data.length+" registros";
   }catch(e){
-    document.getElementById("stC").textContent = "Error: "+e.message;
+    document.getElementById("stC").textContent="Error: "+e.message;
     console.error(e);
   }
 }
 
-function parseNum(s){
-  // Handles "$145.27", "$3,830.00", "145.27", "6.92" etc.
-  return parseFloat(String(s||"").replace(/[$,\s]/g,"")) || 0;
+function buildWeekFilters(data){
+  // Extraer semanas únicas de "fecha captura"
+  const weeks=[...new Set(data.map(r=>{
+    const f=r["fecha captura"]||"";
+    return f?new Date(f).toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"2-digit"}):"";
+  }).filter(Boolean))].slice(-8); // últimas 8 semanas
+
+  const raw=[...new Set(data.map(r=>r["fecha captura"]||"").filter(Boolean))].sort().slice(-8);
+  window._weekMap={};
+  weeks.forEach((w,i)=>window._weekMap[w]=raw[i]);
+
+  const cont=document.getElementById("weekFilters");
+  const allBtn=`<div class="hbtn sel" id="wkAll" onclick="setWeek('all')">Todas</div>`;
+  const wkBtns=raw.map((r,i)=>`<div class="hbtn" id="wk${i}" onclick="setWeekRaw('${r}',${i})">${weeks[i]}</div>`).join("");
+  cont.innerHTML=allBtn+wkBtns;
 }
 
-function getPrice(row, keys){
-  for(const k of keys){
-    if(k.includes("precio") && !k.includes("m2") && !k.includes("x")){
-      const v = parseNum(row[k]);
-      if(v > 0) return v;
-    }
-  }
-  return 0;
+function setWeek(w){
+  _activeWeek=w;
+  document.querySelectorAll("#weekFilters .hbtn").forEach(b=>b.classList.remove("sel"));
+  document.getElementById("wkAll").classList.add("sel");
+  renderPricesTab();
 }
 
-function getM2(row, keys){
-  for(const k of keys){
-    if(k.includes("precio") && (k.includes("m2") || k.includes("x"))){
-      const v = parseNum(row[k]);
-      if(v > 0) return v;
-    }
-  }
-  return 0;
+function setWeekRaw(raw,idx){
+  _activeWeek=raw;
+  document.querySelectorAll("#weekFilters .hbtn").forEach(b=>b.classList.remove("sel"));
+  const el=document.getElementById("wk"+idx);
+  if(el)el.classList.add("sel");
+  renderPricesTab();
 }
 
-function getHotel(row, keys){
-  const k = keys.find(k2=>k2==="nombre hotel")||keys.find(k2=>k2.includes("nombre")&&k2.includes("hotel"))||keys[0];
-  return row[k]||"";
-}
-
-function getCancel(row, keys){
-  const k = keys.find(k2=>k2==="tipo de cancelación")||keys.find(k2=>k2==="tipo de cancelacion")||keys.find(k2=>k2.includes("cancelaci"))||"";
-  return k ? (row[k]||"").toLowerCase() : "";
-}
-
-function filterC(){
-  if(!_priceData.length) return;
-  const keys = Object.keys(_priceData[0]);
-  const cancelVal = document.querySelector('input[name="cancelF"]:checked')?.value||"all";
-  const filtered = cancelVal==="all" ? _priceData : _priceData.filter(r=>{
-    const c = getCancel(r, keys);
-    return c===cancelVal || c.replace("_","")===cancelVal.replace("_","");
+function setScenario(s){
+  _activeScenario=s;
+  ["all","1D","Weekend"].forEach(x=>{
+    const el=document.getElementById("sc"+x);
+    if(el)el.style.background=x===s?"var(--amber)":""
+         ,el.style.color=x===s?"#1a0f00":"";
   });
-  renderPriceKPIs(filtered, keys);
-  renderHotelTable(filtered, keys);
-  renderDetailTable(filtered, keys, _detailHotel);
+  renderPricesTab();
 }
 
-function renderPriceKPIs(data, keys){
-  const prices = data.map(r=>getPrice(r,keys)).filter(p=>p>0);
-  const m2s    = data.map(r=>getM2(r,keys)).filter(p=>p>0);
-  const avg  = prices.length ? prices.reduce((a,b)=>a+b,0)/prices.length : 0;
-  const m2avg= m2s.length   ? m2s.reduce((a,b)=>a+b,0)/m2s.length     : 0;
-  const max  = prices.length ? Math.max(...prices) : 0;
-  document.getElementById("kC-avg").textContent = avg  ? "$"+avg.toFixed(2)  : "—";
-  document.getElementById("kC-m2").textContent  = m2avg? "$"+m2avg.toFixed(2): "—";
-  document.getElementById("kC-max").textContent = max  ? "$"+max.toFixed(2)  : "—";
-  document.getElementById("kC-cnt").textContent = data.length;
+function getFilteredData(){
+  let d=_priceData;
+  if(_activeWeek!=="all"){
+    d=d.filter(r=>{
+      const f=r["fecha captura"]||"";
+      return f.startsWith(_activeWeek.substring(0,10));
+    });
+  }
+  if(_activeScenario!=="all") d=d.filter(r=>r["escenario"]===_activeScenario);
+  return d;
 }
 
-let _sortADR = "desc";
-function sortC(col){ _priceSort=col; filterC(); }
+function getLatestData(){
+  // Solo la captura más reciente
+  const dates=[...new Set(_priceData.map(r=>r["fecha captura"]||"").filter(Boolean))].sort();
+  const latest=dates[dates.length-1]||"";
+  return _priceData.filter(r=>(r["fecha captura"]||"").startsWith(latest.substring(0,10)));
+}
 
-function renderHotelTable(data, keys){
-  const grouped = {};
+function adrByHotelScenario(data){
+  const g={};
   data.forEach(r=>{
-    const h=getHotel(r,keys); const p=getPrice(r,keys); const m=getM2(r,keys);
-    const rt = parseFloat(col(r,"rating","estrellas"))||0;
-    if(!h||!p) return;
-    if(!grouped[h]) grouped[h]={sum:0,m2sum:0,count:0,rating:rt,boh:h.toLowerCase().includes("boh")};
-    grouped[h].sum+=p; grouped[h].m2sum+=m; grouped[h].count++;
-    if(rt) grouped[h].rating=rt;
+    const h=r["hotel"]||"";
+    const s=r["escenario"]||"";
+    const p=parsePrice(r["precio usd"]);
+    if(!h||!p)return;
+    const k=h+"||"+s;
+    if(!g[k])g[k]={h,s,sum:0,n:0,rating:parseFloat(r["rating"])||0};
+    g[k].sum+=p; g[k].n++;
+    if(r["rating"])g[k].rating=parseFloat(r["rating"])||0;
   });
-  const entries = Object.entries(grouped).map(([n,v])=>({n,adr:v.sum/v.count,m2:v.m2sum/v.count,rating:v.rating,boh:v.boh}));
-  entries.sort((a,b)=>_priceSort==="m2"?b.m2-a.m2:b.adr-a.adr);
-  document.getElementById("thADR").textContent = _priceSort==="adr"?"ADR Prom (USD) ▾":"ADR Prom (USD)";
-  document.getElementById("thM2").textContent  = _priceSort==="m2"?"ADR / m2 prom ▾":"ADR / m2 prom";
-  document.getElementById("tblHotel").innerHTML = entries.map((e,i)=>`
-    <tr class="${e.boh?"boh":""}" style="cursor:pointer" onclick="filterDetail('${e.n.replace(/'/g,"\\'")}')">
-      <td style="color:var(--text3);font-size:11px">${i+1}</td>
-      <td style="font-weight:${e.boh?600:400}">${e.boh?"★ ":""}${e.n}</td>
-      <td class="mono" style="text-align:right">${e.rating||"—"}</td>
-      <td class="mono amber" style="text-align:right">$${e.adr.toFixed(2)}</td>
-      <td class="mono" style="text-align:right">$${e.m2.toFixed(2)}</td>
-    </tr>`).join("");
+  return Object.values(g).map(v=>({...v,adr:v.sum/v.n}));
 }
 
-function filterDetail(hotel){
-  _detailHotel = hotel;
-  document.getElementById("detailLabel").textContent = hotel;
-  if(_priceData.length) renderDetailTable(_priceData, Object.keys(_priceData[0]), hotel);
-}
+function renderPricesTab(){
+  const latest=getLatestData();
+  const rows=adrByHotelScenario(latest);
 
-function sortDetail(col){ _detailSort=col; if(_priceData.length) renderDetailTable(_priceData, Object.keys(_priceData[0]), _detailHotel); }
-
-function renderDetailTable(data, keys, hotel){
-  const cancelVal = document.querySelector('input[name="cancelF"]:checked')?.value||"all";
-  let rows = cancelVal==="all" ? data : data.filter(r=>{
-    const c=getCancel(r,keys); return c===cancelVal||c.replace("_","")===cancelVal.replace("_","");
+  // Build per-hotel comparison
+  const hotels={};
+  rows.forEach(r=>{
+    if(!hotels[r.h])hotels[r.h]={name:r.h,boh:r.h.toLowerCase().includes("boh"),rating:r.rating,"1D":0,"Weekend":0};
+    hotels[r.h][r.s]=r.adr;
   });
-  if(hotel) rows = rows.filter(r=>getHotel(r,keys)===hotel);
-  rows = rows.filter(r=>getPrice(r,keys)>0);
-  rows.sort((a,b)=>_detailSort==="m2"?getM2(b,keys)-getM2(a,keys):getPrice(b,keys)-getPrice(a,keys));
+  const entries=Object.values(hotels).sort((a,b)=>(b["1D"]||b["Weekend"])-(a["1D"]||a["Weekend"]));
 
-  // Find exact column keys for display
-  const roomK   = keys.find(k=>k.includes("habitaci"))||"";
-  const areaK   = keys.find(k=>k.includes("rea")&&k.includes("m2"))||keys.find(k=>k.includes("area"))||"";
-  const bedsK   = keys.find(k=>k.includes("camas"))||"";
-  const bedszK  = keys.find(k=>k.includes("ama")&&k.includes("cama"))||keys.find(k=>k.includes("tama"))||"";
+  const bohEntry=entries.find(e=>e.boh)||{};
+  const boh1D=bohEntry["1D"]||0;
+  const bohWk=bohEntry["Weekend"]||0;
 
-  document.getElementById("tblDetail").innerHTML = rows.slice(0,100).map((r,i)=>{
-    const p=getPrice(r,keys), m=getM2(r,keys);
-    return `<tr>
+  // Compare table
+  const tb=document.getElementById("tblCompare");
+  tb.innerHTML=entries.map((e,i)=>{
+    const v1=e["1D"], vw=e["Weekend"];
+    const ref=boh1D||1;
+    const diff=v1?(((v1-boh1D)/ref)*100):null;
+    const premium=v1&&vw?(((vw-v1)/v1)*100):null;
+    const dc=diff===null?"":diff>5?"#f05252":diff<-5?"#2dd896":"#8b909e";
+    const pc=premium===null?"":premium>15?"#2dd896":premium<0?"#f05252":"#8b909e";
+    return `<tr class="${e.boh?"boh":""}" style="cursor:pointer" onclick="showRoomDetail('${e.name.replace(/'/g,"\'")}')">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
-      <td style="font-size:11px">${roomK?r[roomK]||"":""}</td>
-      <td class="mono" style="text-align:right">${areaK?r[areaK]||"":""}</td>
-      <td class="mono" style="text-align:right">${bedsK?r[bedsK]||"":""}</td>
-      <td style="font-size:10px;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${bedszK?r[bedszK]||"":""}</td>
-      <td class="mono amber" style="text-align:right">${p?"$"+p.toFixed(2):"—"}</td>
-      <td class="mono" style="text-align:right">${m?"$"+m.toFixed(2):"—"}</td>
+      <td style="font-weight:${e.boh?600:400};font-size:12px">${e.boh?"★ ":""}${e.name}</td>
+      <td class="mono" style="text-align:right;font-size:11px;color:var(--text2)">${e.rating||"—"}</td>
+      <td class="mono" style="text-align:right;color:var(--blue)">${v1?"$"+v1.toFixed(0):"—"}</td>
+      <td class="mono" style="text-align:right;color:var(--amber)">${vw?"$"+vw.toFixed(0):"—"}</td>
+      <td class="mono" style="text-align:right;color:${pc}">${premium!==null?(premium>0?"+":"")+premium.toFixed(1)+"%":"—"}</td>
+      <td class="mono" style="text-align:right;color:${dc}">${diff!==null&&!e.boh?(diff>0?"+":"")+diff.toFixed(1)+"%":"—"}</td>
     </tr>`;
   }).join("");
+
+  // Bar chart
+  renderBarChart(entries, _activeScenario==="Weekend"?"Weekend":"1D");
+
+  // History chart
+  renderHistoryChart();
 }
 
-function updateBohPriceKPIs(data, keys){
-  const boh   = data.filter(r=>getHotel(r,keys).toLowerCase().includes("boh"));
-  const bPrices = boh.map(r=>getPrice(r,keys)).filter(p=>p>0);
-  const aPrices = data.map(r=>getPrice(r,keys)).filter(p=>p>0);
-  const bAvg = bPrices.length?bPrices.reduce((a,b)=>a+b,0)/bPrices.length:0;
-  const aAvg = aPrices.length?aPrices.reduce((a,b)=>a+b,0)/aPrices.length:0;
-  const grouped = {};
-  data.forEach(r=>{const h=getHotel(r,keys);const p=getPrice(r,keys);if(!h||!p)return;if(!grouped[h])grouped[h]={s:0,c:0};grouped[h].s+=p;grouped[h].c++;});
-  const ranked = Object.entries(grouped).map(([n,v])=>({n,a:v.s/v.c})).sort((a,b)=>b.a-a.a);
-  const rank = ranked.findIndex(e=>e.n.toLowerCase().includes("boh"))+1;
-  const diff = bAvg&&aAvg?(((bAvg-aAvg)/aAvg)*100):0;
-  document.getElementById("kA-adr").textContent  = bAvg?"$"+bAvg.toFixed(0):"—";
-  document.getElementById("kA-mkt").textContent  = aAvg?"$"+aAvg.toFixed(0):"—";
-  const de = document.getElementById("kA-diff");
-  de.textContent  = diff?(diff>0?"+":"")+diff.toFixed(1)+"%":"—";
-  de.className    = "kv "+(diff>0?"kr":diff<0?"kg":"ka");
-  document.getElementById("kA-rank").textContent = rank?"#"+rank+" / "+ranked.length:"—";
+function renderBarChart(entries, scenario){
+  const show=scenario==="all"?"1D":scenario;
+  const sorted=[...entries].filter(e=>e[show]>0).sort((a,b)=>b[show]-a[show]);
+  const old=Chart.getChart("chartBars"); if(old)old.destroy();
+  new Chart(document.getElementById("chartBars").getContext("2d"),{
+    type:"bar",
+    data:{
+      labels:sorted.map(e=>(e.boh?"★ ":"")+e.name),
+      datasets:[{
+        data:sorted.map(e=>e[show]),
+        backgroundColor:sorted.map(e=>e.boh?"rgba(45,216,150,.85)":"rgba(74,158,255,.5)"),
+        borderColor:sorted.map(e=>e.boh?"#2dd896":"#4a9eff"),
+        borderWidth:1,borderRadius:4
+      }]
+    },
+    options:{
+      indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>"$"+ctx.parsed.x.toFixed(2)}}},
+      scales:{
+        x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10},callback:v=>"$"+v}},
+        y:{grid:{display:false},ticks:{color:"#8b909e",font:{size:9}}}
+      }
+    }
+  });
+  document.getElementById("barChartTitle").textContent="ADR "+show+" — última captura";
+}
+
+function renderHistoryChart(){
+  // Group by week → BoH avg, Market avg per scenario
+  const byWeek={};
+  _priceData.forEach(r=>{
+    const f=r["fecha captura"]||"";
+    const s=r["escenario"]||"";
+    const h=r["hotel"]||"";
+    const p=parsePrice(r["precio usd"]);
+    if(!f||!s||!p)return;
+    const wk=f.substring(0,10);
+    if(!byWeek[wk])byWeek[wk]={};
+    const k=s+"||"+(h.toLowerCase().includes("boh")?"boh":"mkt");
+    if(!byWeek[wk][k])byWeek[wk][k]={sum:0,n:0};
+    byWeek[wk][k].sum+=p; byWeek[wk][k].n++;
+  });
+  const weeks=Object.keys(byWeek).sort().slice(-8);
+  const avg=(wk,k)=>{const v=byWeek[wk]&&byWeek[wk][k];return v&&v.n?v.sum/v.n:null;};
+
+  const old=Chart.getChart("chartHistory"); if(old)old.destroy();
+  new Chart(document.getElementById("chartHistory").getContext("2d"),{
+    type:"line",
+    data:{
+      labels:weeks.map(w=>new Date(w).toLocaleDateString("es-CO",{day:"2-digit",month:"short"})),
+      datasets:[
+        {label:"BoH 1D",     data:weeks.map(w=>avg(w,"1D||boh")),     borderColor:"#2dd896",backgroundColor:"rgba(45,216,150,.08)", borderWidth:2,pointRadius:3,tension:.4,fill:false},
+        {label:"BoH Wknd",   data:weeks.map(w=>avg(w,"Weekend||boh")), borderColor:"#f5a623",backgroundColor:"rgba(245,166,35,.08)",  borderWidth:2,pointRadius:3,tension:.4,fill:false},
+        {label:"Mercado 1D", data:weeks.map(w=>avg(w,"1D||mkt")),     borderColor:"#4a9eff",backgroundColor:"transparent",           borderWidth:1.5,pointRadius:2,tension:.4,borderDash:[4,3]},
+        {label:"Mercado Wknd",data:weeks.map(w=>avg(w,"Weekend||mkt")),borderColor:"#a78bfa",backgroundColor:"transparent",          borderWidth:1.5,pointRadius:2,tension:.4,borderDash:[4,3]},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:"#8b909e",font:{size:10},boxWidth:12}}},
+      scales:{
+        x:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:9}}},
+        y:{grid:{color:"rgba(255,255,255,.03)"},ticks:{color:"#50566a",font:{size:10},callback:v=>"$"+v}}
+      }
+    }
+  });
+}
+
+function showRoomDetail(hotel){
+  _selectedHotel=hotel;
+  document.getElementById("detailHotelName").textContent=hotel;
+  const latest=getLatestData();
+  const rows=latest.filter(r=>r["hotel"]===hotel);
+  if(!rows.length){document.getElementById("tblRooms").innerHTML='<div class="empty">Sin datos</div>';return;}
+
+  const byScenario={};
+  rows.forEach(r=>{
+    const s=r["escenario"]||"";
+    const hab=r["habitacion"]||"";
+    const p=parsePrice(r["precio usd"]);
+    const k=s+"||"+hab;
+    if(!byScenario[k])byScenario[k]={s,hab,prices:[]};
+    if(p)byScenario[k].prices.push(p);
+  });
+
+  const html=Object.values(byScenario).map(v=>{
+    const avg=v.prices.length?v.prices.reduce((a,b)=>a+b,0)/v.prices.length:0;
+    const sc=v.s==="Weekend"?"var(--amber)":"var(--blue)";
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
+      <div><span style="font-size:9px;background:var(--bg4);color:${sc};padding:1px 5px;border-radius:3px;margin-right:6px">${v.s}</span>${v.hab||"Habitación"}</div>
+      <div class="mono" style="color:${sc}">${avg?"$"+avg.toFixed(2):"—"}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("tblRooms").innerHTML=html||'<div class="empty">Sin habitaciones</div>';
+}
+
+function updateBohPriceKPIs(data){
+  const latest=getLatestData();
+  function adr(d){ return d.length?d.map(r=>parsePrice(r["precio usd"])).filter(p=>p>0).reduce((a,b)=>a+b,0)/d.filter(r=>parsePrice(r["precio usd"])>0).length||0:0; }
+  const boh1D =adr(latest.filter(r=>r["escenario"]==="1D"      &&(r["hotel"]||"").toLowerCase().includes("boh")));
+  const bohWk =adr(latest.filter(r=>r["escenario"]==="Weekend"  &&(r["hotel"]||"").toLowerCase().includes("boh")));
+  const mkt1D =adr(latest.filter(r=>r["escenario"]==="1D"      &&!(r["hotel"]||"").toLowerCase().includes("boh")));
+  const mktWk =adr(latest.filter(r=>r["escenario"]==="Weekend"  &&!(r["hotel"]||"").toLowerCase().includes("boh")));
+
+  // Rankings
+  const rank=(scenario)=>{
+    const g={};
+    latest.filter(r=>r["escenario"]===scenario).forEach(r=>{
+      const h=r["hotel"]||""; const p=parsePrice(r["precio usd"]);
+      if(!h||!p)return;
+      if(!g[h])g[h]={s:0,n:0};g[h].s+=p;g[h].n++;
+    });
+    const sorted=Object.entries(g).map(([n,v])=>({n,a:v.s/v.n})).sort((a,b)=>b.a-a.a);
+    const idx=sorted.findIndex(e=>e.n.toLowerCase().includes("boh"));
+    return idx>=0?"#"+(idx+1)+" / "+sorted.length:"—";
+  };
+
+  document.getElementById("kC-boh1d").textContent=boh1D?"$"+boh1D.toFixed(0):"—";
+  document.getElementById("kC-bohWk").textContent=bohWk?"$"+bohWk.toFixed(0):"—";
+  document.getElementById("kC-mkt1d").textContent=mkt1D?"$"+mkt1D.toFixed(0):"—";
+  document.getElementById("kC-mktWk").textContent=mktWk?"$"+mktWk.toFixed(0):"—";
+  document.getElementById("kC-rank1d").textContent=rank("1D");
+  document.getElementById("kC-rankWk").textContent=rank("Weekend");
+
+  // Mi hotel tab prices
+  document.getElementById("kA-adr").textContent=boh1D?"$"+boh1D.toFixed(0):"—";
+  document.getElementById("kA-mkt").textContent=mkt1D?"$"+mkt1D.toFixed(0):"—";
+  if(boh1D&&mkt1D){
+    const diff=(((boh1D-mkt1D)/mkt1D)*100);
+    const el=document.getElementById("kA-diff");
+    el.textContent=(diff>0?"+":"")+diff.toFixed(1)+"%";
+    el.className="kv "+(diff>0?"kr":"kg");
+  }
+  document.getElementById("kA-rank").textContent=rank("1D");
 }
 
 // ═══════════════════════════════════════════════════
